@@ -1,50 +1,50 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
-import { Location } from "@/lib/definitions"
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { Location } from "@/lib/definitions";
 
 export interface CandidateFormData {
-  contactId:number|null
+  contactId: number | null;
   // Basic Details
-  firstName: string
-  lastName: string
-  dob: string
-  emailId: string
-  primaryNumber: string
-  secondaryNumber: string|null
-  gender: string
-  maritalStatus: string
-  currentLocation: Location
-  pinCode: string|null
-  address1: string|null
-  addressLocality: string|null
-  isActive: boolean
-  differentlyAbled: boolean
-  differentlyAbledType: string|null
+  firstName: string;
+  lastName: string;
+  dob: string;
+  emailId: string;
+  primaryNumber: string;
+  secondaryNumber: string | null;
+  gender: string;
+  maritalStatus: string;
+  currentLocation: Location;
+  pinCode: string | null;
+  address1: string | null;
+  addressLocality: string | null;
+  isActive: boolean;
+  differentlyAbled: boolean;
+  differentlyAbledType: string | null;
 
   // Professional Details
-  highestEducation: string
-  totalExperience: number | string
-  companyName: string
-  noticePeriod: number | string
-  designation: string
-  
-  techRole: string
-//   relevantExperience: number | string
-  isExpectedCtcNegotiable: boolean
+  highestEducation: string;
+  totalExperience: number | string;
+  companyName: string;
+  noticePeriod: number | string;
+  designation: string;
+
+  techRole: string;
+  //   relevantExperience: number | string
+  isExpectedCtcNegotiable: boolean;
 
   // Preferences
-  currentSalary: number | string
-  expectedSalary: number | string
-  resume: string
-
+  currentSalary: number | string;
+  expectedSalary: number | string;
+  resume: string;
+  image: string | null;
 }
 
 interface CandidateState {
-  currentStep: number
-  formData: CandidateFormData
+  currentStep: number;
+  formData: CandidateFormData;
 }
 
 const initialFormData: CandidateFormData = {
-  contactId:null,
+  contactId: null,
   firstName: "",
   lastName: "",
   dob: "",
@@ -65,17 +65,18 @@ const initialFormData: CandidateFormData = {
   companyName: "",
   noticePeriod: "",
   designation: "",
+  image: null,
   currentSalary: "",
   techRole: "",
   expectedSalary: "",
   isExpectedCtcNegotiable: false,
-  resume:"",
-}
+  resume: "",
+};
 
 const initialState: CandidateState = {
   currentStep: 1,
   formData: initialFormData,
-}
+};
 
 const candidateSlice = createSlice({
   name: "candidate",
@@ -83,23 +84,31 @@ const candidateSlice = createSlice({
   reducers: {
     nextStep: (state) => {
       if (state.currentStep < 5) {
-        state.currentStep += 1
+        state.currentStep += 1;
       }
     },
     prevStep: (state) => {
       if (state.currentStep > 1) {
-        state.currentStep -= 1
+        state.currentStep -= 1;
       }
     },
-    updateCandidateFormData: (state, action: PayloadAction<Partial<CandidateFormData>>) => {
-      state.formData = { ...state.formData, ...action.payload }
+    updateCandidateFormData: (
+      state,
+      action: PayloadAction<Partial<CandidateFormData>>
+    ) => {
+      state.formData = { ...state.formData, ...action.payload };
     },
     resetCandidateForm: (state) => {
-      state.currentStep = 1
-      state.formData = initialFormData
+      state.currentStep = 1;
+      state.formData = initialFormData;
     },
   },
-})
+});
 
-export const { nextStep, prevStep, updateCandidateFormData, resetCandidateForm } = candidateSlice.actions
-export default candidateSlice.reducer
+export const {
+  nextStep,
+  prevStep,
+  updateCandidateFormData,
+  resetCandidateForm,
+} = candidateSlice.actions;
+export default candidateSlice.reducer;

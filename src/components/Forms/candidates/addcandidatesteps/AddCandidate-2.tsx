@@ -15,27 +15,41 @@ export default function Step2Uploads() {
   const [resumeField, resumeMeta] = useField("resume");
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleImageChange = (field: string, file: File | null) => {
-    dispatch(updateCandidateFormData({ [field]: file }));
+  // 2. Update your component code
+  const handleImageChange = async (field: string, file: File | null) => {
+    if (!file) return;
 
-    if (field === "profilePhoto" && file) {
+    try {
+      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfilePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
-    }
 
-    if(file){
-      uploadImage(file).then((res) => {
-        console.log(res);
-      })
+      // Upload to server
+      const response = await uploadImage(file);
+      if (response) {
+        dispatch(updateCandidateFormData({ image: response }));
+      }
+
+      // If you need to store the server response (like image URL)
+      // dispatch(updateCandidateFormData({
+      //   profilePhoto: response.imageUrl, // Adjust according to your API response
+      //   profilePhotoFile: file // If you need the file object too
+      // }));
+    } catch (error) {
+      console.error("Upload failed:", error);
+      // Reset preview if upload fails
+      setProfilePreview(null);
+      // Show error to user
+      alert("Image upload failed. Please try again.");
     }
   };
 
   const removeProfilePhoto = () => {
-    // dispatch(updateCandidateFormData({ image: null }))
     setProfilePreview(null);
+    dispatch(updateCandidateFormData({ image: null }));
   };
 
   const handleUpload = async (event: any) => {

@@ -225,25 +225,22 @@ export async function uploadAutofillResume(reqData: any) {
   }
 }
 
-export async function uploadImage(reqData: any) {
+// 1. First, update your uploadImage function
+export async function uploadImage(file: File) {
   try {
-    const response = await axios.post(`${API_URL}contacts/image`, reqData, {
-      method: "POST",
+    const formData = new FormData();
+    formData.append('file', file); // Use 'image' or whatever field name your API expects
+
+    const response = await axios.post(`${API_URL}contacts/image`, formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
         "X-Requested-With": "XMLHttpRequest",
         Authorization: "Basic " + btoa(`${Email}:${Password}`),
       },
-      // onUploadProgress: (progressEvent: any) => {
-      //   const progress = Math.round(
-      //     (progressEvent.loaded * 100) / progressEvent.total
-      //   );
-      //   console.log(progress);
-      // },
     });
-    return response;
+    
+    return response.data;
   } catch (err: any) {
     console.error("Image upload error:", err);
-    return err.response ? err.response.data : err.message;
+    throw err; // Rethrow to handle in the component
   }
 }

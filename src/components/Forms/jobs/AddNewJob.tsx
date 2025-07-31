@@ -75,14 +75,6 @@ export default function AddNewJob({
         },
       })
     );
-    dispatch(
-      updateAddJobFormData({
-        insertedBy:
-          user?.replace('"', "").replace('"', "").charAt(0).toUpperCase() +
-          "" +
-          user?.slice(2, user.length - 1),
-      })
-    );
     console.log("Form submitted:", values);
     if (formData.client.clientId) {
       await createJob(values).then((data) => {
@@ -93,18 +85,13 @@ export default function AddNewJob({
           });
           autoClose();
           dispatch(resetForm());
-        } else {
+        } else{
+          toast.error(data.message, {
+            position: "top-right",
+          })
           return;
         }
       });
-    } else {
-      dispatch(
-        updateAddJobFormData({
-          client: {
-            clientId: client?.clientId,
-          },
-        })
-      );
     }
   };
 
