@@ -9,7 +9,6 @@ export default function Step3Professional() {
   const formData = useSelector((state: any) => state.candidate.formData);
 
   // Formik field hooks
-  const [educationField, educationMeta] = useField("highestEducation");
   const [experienceField, experienceMeta] = useField("totalExperience");
   const [companyField, companyMeta] = useField("companyName");
   const [noticePeriodField, noticePeriodMeta] = useField("noticePeriod");
@@ -37,43 +36,6 @@ export default function Step3Professional() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block font-semibold mb-3">
-            Education <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              {...educationField}
-              value={formData.highestEducation}
-              onChange={(e) => {
-                educationField.onChange(e);
-                handleInputChange("highestEducation", e.target.value);
-              }}
-              onBlur={educationField.onBlur}
-              placeholder="Enter highest education degree"
-              className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
-            />
-            {educationMeta.error && (
-              <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{educationMeta.error}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
         <div>
           <label className="block font-semibold mb-3">
             Experience (Years) <span className="text-red-500">*</span>
@@ -110,9 +72,6 @@ export default function Step3Professional() {
             )}
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-3">Company Name</label>
           <div className="relative">
@@ -331,96 +290,95 @@ export default function Step3Professional() {
             </div>
           )}
         </div>
-      </div>
-
-      <div>
-        <label className="block font-semibold mb-4">Salary Negotiable?</label>
-        <div className="flex flex-wrap gap-6">
-          {[true, false].map((option, i) => (
-            <label key={i} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name={ctcNegotiableField.name}
-                value={formData.isExpectedCtcNegotiable}
-                onChange={(e) => {
-                  ctcNegotiableField.onChange(e);
-                  handleRadioChange("isExpectedCtcNegotiable", option);
-                }}
-                onBlur={ctcNegotiableField.onBlur}
-                className="sr-only"
-              />
-              <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  formData.isExpectedCtcNegotiable === option
-                    ? "border-cyan-500"
-                    : "border-gray-300"
-                }`}
-              >
-                {formData.isExpectedCtcNegotiable === option && (
-                  <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
-                )}
-              </div>
-              <span className="text-gray-700">
-                {option === true ? "Yes" : "No"}
-              </span>
-            </label>
-          ))}
-        </div>
-        {ctcNegotiableMeta.error && (
-          <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-1.5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>{ctcNegotiableMeta.error}</span>
-          </div>
-        )}
-        <div className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"></div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block font-semibold mb-3">
-            Relevant Experience (Years)
-          </label>
-          <div className="relative">
-            <input
-              type="number"
-              {...relevantExpField}
-              value={formData.relevantExperience}
-              onChange={(e) => {
-                relevantExpField.onChange(e);
-                handleInputChange("relevantExperience", e.target.value);
-              }}
-              onBlur={relevantExpField.onBlur}
-              placeholder="Enter relevant experience"
-              className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
-            />
-            {relevantExpMeta.error && (
-              <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+          <label className="block font-semibold mb-8">Salary Negotiable?</label>
+          <div className="flex flex-wrap gap-6">
+            {[true, false].map((option, i) => (
+              <label key={i} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={ctcNegotiableField.name}
+                  value={formData.isExpectedCtcNegotiable}
+                  onChange={(e) => {
+                    ctcNegotiableField.onChange(e);
+                    handleRadioChange("isExpectedCtcNegotiable", option);
+                  }}
+                  onBlur={ctcNegotiableField.onBlur}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    formData.isExpectedCtcNegotiable === option
+                      ? "border-cyan-500"
+                      : "border-gray-300"
+                  }`}
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{relevantExpMeta.error}</span>
-              </div>
-            )}
+                  {formData.isExpectedCtcNegotiable === option && (
+                    <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
+                  )}
+                </div>
+                <span className="text-gray-700">
+                  {option === true ? "Yes" : "No"}
+                </span>
+              </label>
+            ))}
+          </div>
+          {ctcNegotiableMeta.error && (
+            <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{ctcNegotiableMeta.error}</span>
+            </div>
+          )}
+
+        </div>
+
+        <div className="">
+          <div>
+            <label className="block font-semibold mb-3">
+              Relevant Experience (Years)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                {...relevantExpField}
+                value={formData.relevantExperience}
+                onChange={(e) => {
+                  relevantExpField.onChange(e);
+                  handleInputChange("relevantExperience", e.target.value);
+                }}
+                onBlur={relevantExpField.onBlur}
+                placeholder="Enter relevant experience"
+                className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
+              />
+              {relevantExpMeta.error && (
+                <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-1.5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>{relevantExpMeta.error}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

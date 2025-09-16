@@ -193,7 +193,7 @@ export default function AddNewCandidate({
   };
 
   return (
-    <Popup onClose={handleCancel}>
+    <Popup>
       <div className="rounded-md p-10 my-8 bg-white">
         <h1 className="font-semibold text-2xl">Add Candidate</h1>
         <div className="">

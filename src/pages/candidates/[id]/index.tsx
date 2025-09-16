@@ -3,12 +3,12 @@ import MainLayout from "@/components/Layouts/layout";
 import { Popup } from "@/components/Elements/cards/popup";
 import ProfileUpdateForm from "@/components/Forms/candidates/updateProfile";
 import PdfViewer from "@/components/Elements/utils/pdfViewer";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 // Next.js and React Imports
 import { useRouter } from "next/router";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Award,
   Building2,
@@ -26,75 +26,63 @@ import {
   Route,
   Twitter,
   User,
-  X,
+  ChevronDown,
+  Plus,
+  Trash2,
+  ArrowBigLeftDashIcon,
 } from "lucide-react";
 // External Libraries
 import { toast } from "react-toastify";
+import axios from "axios";
 
 // Models and Definitions
-import { Companies, Company } from "@/lib/models/client";
-import {
+import type { Companies, Company } from "@/lib/models/client";
+import type {
   Certificates,
   allTechs,
   Domains,
   Interview,
   Technology,
 } from "@/lib/models/candidate";
-import { Candidate } from "@/lib/definitions";
-import { ReqData } from "@/lib/models/candidate";
+import type { Candidate } from "@/lib/definitions";
+import type { ReqData } from "@/lib/models/candidate";
 
 // API Calls
-import { fetchCandidate } from "@/api/candidates/candidates";
-import {
-  deleteContactDomain,
-  fetchAllContactDomains,
-} from "@/api/candidates/domains";
-import { deleteContactCompany } from "@/api/candidates/companies";
+import { fetchCandidate, getContactImage } from "@/api/candidates/candidates";
+import { fetchAllContactDomains } from "@/api/candidates/domains";
 import { fetchAllContactCompanies } from "@/api/candidates/companies";
 import { fetchContactCertificationsByContact } from "@/api/candidates/certification";
-import {
-  fetchAllCertifications,
-  createCertification,
-} from "@/api/master/certification";
-import {
-  createContactCertification,
-  deleteContactCertification,
-} from "@/api/candidates/certification";
+import { fetchAllCertifications } from "@/api/master/certification";
+
 import {
   updateContactTechnology,
-  createContactTechnology,
   fetchAllContactTechnologies,
 } from "@/api/candidates/candidateTech";
-import { contactCertificate } from "@/lib/models/candidate";
-import {
-  fetchAllTechnologies,
-  createTechnology,
-} from "@/api/master/masterTech";
-import { domainDetails } from "@/lib/models/candidate";
-import { fetchAllDomains, createDomain } from "@/api/master/domain";
-import { createContactDomain } from "@/api/candidates/domains";
-import { createContactCompany } from "@/api/candidates/companies";
-import { fetchAllCompanies, createCompany } from "@/api/master/masterCompany";
+import type { contactCertificate } from "@/lib/models/candidate";
+import { fetchAllTechnologies } from "@/api/master/masterTech";
+import type { domainDetails } from "@/lib/models/candidate";
+import { fetchAllDomains } from "@/api/master/domain";
+import { fetchAllCompanies } from "@/api/master/masterCompany";
 import { fetchAllLocations } from "@/api/master/masterLocation";
-import {
-  getContactPreferredJobTypeByContact,
-  getContactPreferredJobTypes,
-} from "@/api/candidates/preferredJob";
-import {
-  fetchContactInterview,
-  fetchInterviewsByContact,
-} from "@/api/candidates/interviews";
-import {
-  fetchAllContactPreferredLocations,
-  fetchContactPreferredLocation,
-} from "@/api/candidates/preferredLocation";
+import { getContactPreferredJobTypeByContact } from "@/api/candidates/preferredJob";
+import { fetchInterviewsByContact } from "@/api/candidates/interviews";
+import { fetchAllContactPreferredLocations } from "@/api/candidates/preferredLocation";
 import { getContactHiringTypeByContactId } from "@/api/candidates/hiringType";
 import AddCandidateDomain from "@/components/Forms/candidates/addCandidateDomain";
 import AddCandidateCompany from "@/components/Forms/candidates/addCandidateCompany";
 import AddCandidateCertificate from "@/components/Forms/candidates/addCandidateCertificate";
 import AddSkillsForm from "@/components/Forms/candidates/addSkill";
-import ContentHeader from "@/components/Layouts/content-header";
 import UpdateCandidateCertificate from "@/components/Forms/candidates/updateCandidateCert";
+import {
+  createEducation,
+  fetchEducationsByContact,
+  updateEducation,
+  deleteEducation,
+} from "@/api/candidates/education";
+import { fetchAllCourses } from "@/api/candidates/courses";
+import { fetchAllUniversities } from "@/api/candidates/university";
+import { createCourse } from "@/api/candidates/courses";
+import { createUniversity } from "@/api/candidates/university";
 
 export default function Candidates() {
   // candidate state
@@ -164,23 +152,682 @@ export default function Candidates() {
   const [isUpdateCertificateVisible, setIsUpdateCertificateVisible] =
     useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [imgSrc, setImgSrc] = useState<string>("");
+
+  const [educations, setEducations] = useState<any[]>([]);
+  const [showEducationForm, setShowEducationForm] = useState(false);
+  const [editingEducation, setEditingEducation] = useState<any>(null);
+  const [universities, setUniversities] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [specializations, setSpecializations] = useState<any[]>([]);
+  const [contactId, setContactId] = useState(0);
+
+  const ComboBox = ({
+    value,
+    onChange,
+    options,
+    placeholder,
+    onCreateNew,
+    required = false,
+    level = "UG",
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    options: { id: number; name: string }[];
+    placeholder: string;
+    onCreateNew: (name: string, level?: string) => Promise<void>;
+    required?: boolean;
+    level?: string;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [inputValue, setInputValue] = useState(value);
+    const [filteredOptions, setFilteredOptions] = useState(options);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setInputValue(newValue);
+      onChange(newValue);
+
+      const filtered = options.filter((option) =>
+        option.name.toLowerCase().includes(newValue.toLowerCase())
+      );
+      setFilteredOptions(filtered);
+      setIsOpen(true);
+    };
+
+    const handleOptionSelect = (option: { id: number; name: string }) => {
+      setInputValue(option.name);
+      onChange(option.name);
+      setIsOpen(false);
+    };
+
+    const handleCreateNew = async () => {
+      if (
+        inputValue.trim() &&
+        !options.find(
+          (opt) => opt.name.toLowerCase() === inputValue.toLowerCase()
+        )
+      ) {
+        try {
+          await onCreateNew(inputValue.trim(), level);
+          setIsOpen(false);
+        } catch (error) {
+          console.error("Failed to create new entry:", error);
+        }
+      }
+    };
+
+    const showCreateOption =
+      inputValue.trim() &&
+      !options.find(
+        (opt) => opt.name.toLowerCase() === inputValue.toLowerCase()
+      ) &&
+      filteredOptions.length === 0;
+
+    return (
+      <div className="relative">
+        <div className="relative">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onFocus={() => setIsOpen(true)}
+            className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+            placeholder={placeholder}
+            required={required}
+            minLength={2}
+            maxLength={150}
+          />
+          <ChevronDown
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 cursor-pointer"
+            onClick={() => setIsOpen(!isOpen)}
+          />
+        </div>
+
+        {isOpen && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {filteredOptions.map((option) => (
+              <div
+                key={option.id}
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => handleOptionSelect(option)}
+              >
+                {option.name}
+              </div>
+            ))}
+            {showCreateOption && (
+              <div
+                className="px-3 py-2 hover:bg-cyan-50 cursor-pointer text-cyan-600 border-t border-gray-200"
+                onClick={handleCreateNew}
+              >
+                + Create "{inputValue}"
+              </div>
+            )}
+            {filteredOptions.length === 0 && !showCreateOption && (
+              <div className="px-3 py-2 text-gray-500">No options found</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const EducationForm = ({
+    education,
+    onSave,
+    onCancel,
+    isEdit = false,
+  }: any) => {
+    const [formData, setFormData] = useState({
+      contactDetails: {
+        contactId: contactId,
+      },
+      universityId: education?.university?.universityId || 0,
+      courseId: education?.course?.courseId || 0,
+      specialization: education?.specialization || "",
+      courseType: education?.courseType || "Full Time",
+      startYear: education?.startYear || new Date().getFullYear(),
+      endYear: education?.endYear || new Date().getFullYear(),
+      gradingSystem: education?.gradingSystem || "Percentage",
+      marks: education?.marks || 0,
+    });
+
+    const [isNewCourse, setIsNewCourse] = useState(false);
+
+    const [selectedUniversityName, setSelectedUniversityName] = useState(
+      education?.university?.universityName || ""
+    );
+    const [selectedCourseName, setSelectedCourseName] = useState(
+      education?.course?.courseName || ""
+    );
+    const [selectedLevel, setSelectedLevel] = useState(
+      education?.course?.level || "UG"
+    );
+
+    const handleCreateUniversity = async (name: string) => {
+      try {
+        const newUniversity = { universityName: name };
+        const result = await createUniversity(newUniversity);
+
+        const newUni = {
+          universityId: Date.now(),
+          universityName: name,
+          insertedOn: new Date().toISOString().split("T")[0],
+        };
+        setUniversities((prev) => [...prev, newUni]);
+        setFormData({ ...formData, universityId: newUni.universityId });
+        setSelectedUniversityName(name);
+      } catch (error) {
+        console.error("Error creating university:", error);
+        toast.error("Failed to create new university. Please try again.", {
+          position: "top-center",
+        });
+      }
+    };
+
+    const handleCreateCourse = async (name: string, level: string = "UG") => {
+      try {
+        const newCourse = { courseName: name, level: level };
+        const result = await createCourse(newCourse);
+
+        const newCourseObj = {
+          courseId: result.courseId,
+          courseName: name,
+          level: level,
+        };
+        setCourses((prev) => [...prev, newCourseObj]);
+
+        setSelectedCourseName(name);
+        setFormData({ ...formData, courseId: result.courseId });
+        setIsNewCourse(false);
+      } catch (error) {
+        console.error("Error creating course:", error);
+        toast.error("Failed to create new course. Please try again.", {
+          position: "top-center",
+        });
+      }
+    };
+
+    const handleUniversityChange = (universityName: string) => {
+      setSelectedUniversityName(universityName);
+      const university = universities.find(
+        (u) => u.universityName === universityName
+      );
+      if (university) {
+        setFormData({ ...formData, universityId: university.universityId });
+      }
+    };
+
+    const handleCourseChange = (courseName: string) => {
+      setSelectedCourseName(courseName);
+      const course = courses.find((c) => c.courseName === courseName);
+
+      if (course) {
+        // Existing course selected
+        setFormData({ ...formData, courseId: course.courseId });
+        setSelectedLevel(course.level);
+        setIsNewCourse(false);
+      } else {
+        // New course being entered
+        setFormData({ ...formData, courseId: 0 });
+        setIsNewCourse(true);
+      }
+    };
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+
+      const selectedUniversity = universities.find(
+        (u) => u.universityId === formData.universityId
+      );
+      const selectedCourse = courses.find(
+        (c) => c.courseId === formData.courseId
+      );
+
+      if (!selectedUniversity || !selectedCourse) {
+        toast.error("Please select both university and course", {
+          position: "top-center",
+        });
+        return;
+      }
+
+      if (
+        formData.specialization.length < 2 ||
+        formData.specialization.length > 150
+      ) {
+        toast.error("Specialization must be between 2 and 150 characters", {
+          position: "top-center",
+        });
+        return;
+      }
+
+      if (formData.startYear < 1900 || formData.endYear < 1900) {
+        toast.error("Years must be 1900 or later", { position: "top-center" });
+        return;
+      }
+
+      if (formData.startYear > formData.endYear) {
+        toast.error("Start year cannot be later than end year", {
+          position: "top-center",
+        });
+        return;
+      }
+
+      if (
+        formData.gradingSystem === "Percentage" &&
+        (formData.marks < 0 || formData.marks > 100)
+      ) {
+        toast.error("Percentage must be between 0 and 100", {
+          position: "top-center",
+        });
+        return;
+      }
+
+      if (
+        formData.gradingSystem === "CGPA" &&
+        (formData.marks < 0 || formData.marks > 10)
+      ) {
+        toast.error("CGPA must be between 0 and 10", {
+          position: "top-center",
+        });
+        return;
+      }
+
+      onSave({
+        contactDetails: { contactId: contactId },
+        university: {
+          universityId: selectedUniversity.universityId,
+          universityName: selectedUniversity.universityName,
+        },
+        course: {
+          courseId: selectedCourse.courseId,
+          courseName: selectedCourse.courseName,
+          level: selectedCourse.level,
+        },
+        specialization: formData.specialization,
+        courseType: formData.courseType,
+        startYear: formData.startYear,
+        endYear: formData.endYear,
+        gradingSystem: formData.gradingSystem,
+        marks: formData.marks,
+      });
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <h1 className="text-2xl font-bold text-gray-800 mb-8">
+            {isEdit ? "Update Education" : "Add Education"}
+          </h1>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                  University <span className="text-red-500">*</span>
+                </label>
+                <ComboBox
+                  value={selectedUniversityName}
+                  onChange={handleUniversityChange}
+                  options={universities.map((uni) => ({
+                    id: uni.universityId,
+                    name: uni.universityName,
+                  }))}
+                  placeholder="Select or type university name"
+                  onCreateNew={handleCreateUniversity}
+                  required={true}
+                />
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                  Course <span className="text-red-500">*</span>
+                </label>
+                <ComboBox
+                  value={selectedCourseName}
+                  onChange={handleCourseChange}
+                  options={courses.map((course) => ({
+                    id: course.courseId,
+                    name: `${course.courseName}`,
+                  }))}
+                  placeholder="Select or type course name"
+                  onCreateNew={(name) =>
+                    handleCreateCourse(name, selectedLevel)
+                  }
+                  required={true}
+                  level={selectedLevel}
+                />
+              </div>
+
+              {/* Show level dropdown only when creating a new course */}
+              {isNewCourse && (
+                <div>
+                  <label className="block text-lg font-semibold text-gray-700 mb-2">
+                    Level <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedLevel}
+                    onChange={(e) => setSelectedLevel(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                  >
+                    <option value="UG">Undergraduate (UG)</option>
+                    <option value="PG">Postgraduate (PG)</option>
+                    <option value="Diploma">Diploma</option>
+                    <option value="Certificate">Certificate</option>
+                    <option value="Doctorate">Doctorate</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select level for the new course
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-lg font-semibold text-gray-700 mb-2">
+                Specialization <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.specialization}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    specialization: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                  Course Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.courseType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, courseType: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                  required
+                >
+                  <option value="Full Time">Full Time</option>
+                  <option value="Part Time">Part Time</option>
+                  <option value="Distance">Distance</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                  Start Year <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear() + 10}
+                  value={formData.startYear}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      startYear: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                  End Year <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear() + 10}
+                  value={formData.endYear}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      endYear: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                  Grading System <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.gradingSystem}
+                  onChange={(e) =>
+                    setFormData({ ...formData, gradingSystem: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                  required
+                >
+                  <option value="Percentage">Percentage</option>
+                  <option value="CGPA">CGPA</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                  {formData.gradingSystem === "Percentage"
+                    ? "Percentage"
+                    : "CGPA"}{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step={formData.gradingSystem === "CGPA" ? "0.01" : "1"}
+                  min="0"
+                  max={formData.gradingSystem === "Percentage" ? "100" : "10"}
+                  value={formData.marks}
+                  onChange={(e) =>
+                    setFormData({ ...formData, marks: Number(e.target.value) })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                  placeholder={
+                    formData.gradingSystem === "Percentage" ? "0-100" : "0-10"
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 mt-8">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-8 py-2 border-2 border-cyan-500 text-cyan-500 rounded-lg hover:bg-cyan-50 transition-colors duration-200 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-8 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors duration-200 font-medium"
+              >
+                {isEdit ? "Update" : "Add"} Education
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // API functions
+  const handleAddEducation = async (educationData: any) => {
+    console.log(educationData);
+    try {
+      const response = await createEducation(educationData);
+      console.log(response);
+      if (
+        response.message &&
+        response.message.includes(
+          "Education period overlaps with existing record for contact"
+        )
+      ) {
+        toast.error("Education period overlaps with existing record", {
+          position: "top-center",
+        });
+        return;
+      }
+      if (response && response.educationId) {
+        const newEducation = {
+          ...educationData,
+          educationId: response.educationId,
+        };
+        setEducations([...educations, newEducation]);
+      } else {
+        const newEducation = {
+          ...educationData,
+          educationId: Date.now(),
+        };
+        setEducations([...educations, newEducation]);
+      }
+      setShowEducationForm(false);
+    } catch (error) {
+      console.error("Error creating education:", error);
+      const newEducation = {
+        ...educationData,
+        educationId: Date.now(),
+      };
+      setEducations([...educations, newEducation]);
+      setShowEducationForm(false);
+    }
+  };
+
+  const handleUpdateEducation = async (educationData: any) => {
+    if (editingEducation) {
+      try {
+        const updatePayload: any = {
+          educationId: editingEducation.educationId,
+        };
+
+        if (
+          educationData.university?.universityId !==
+          editingEducation.university?.universityId
+        ) {
+          updatePayload.university = educationData.university;
+        }
+
+        if (
+          educationData.course?.courseId !== editingEducation.course?.courseId
+        ) {
+          updatePayload.course = educationData.course;
+        }
+
+        if (educationData.specialization !== editingEducation.specialization) {
+          updatePayload.specialization = educationData.specialization;
+        }
+
+        if (educationData.courseType !== editingEducation.courseType) {
+          updatePayload.courseType = educationData.courseType;
+        }
+
+        if (educationData.startYear !== editingEducation.startYear) {
+          updatePayload.startYear = educationData.startYear;
+        }
+
+        if (educationData.endYear !== editingEducation.endYear) {
+          updatePayload.endYear = educationData.endYear;
+        }
+
+        if (educationData.gradingSystem !== editingEducation.gradingSystem) {
+          updatePayload.gradingSystem = educationData.gradingSystem;
+        }
+
+        if (educationData.marks !== editingEducation.marks) {
+          updatePayload.marks = educationData.marks;
+        }
+
+        if (Object.keys(updatePayload).length > 1) {
+          await updateEducation(editingEducation.educationId, updatePayload);
+        }
+
+        setEducations(
+          educations.map((edu) =>
+            edu.educationId === editingEducation.educationId
+              ? { ...educationData, educationId: editingEducation.educationId }
+              : edu
+          )
+        );
+        setEditingEducation(null);
+        setShowEducationForm(false);
+      } catch (error) {
+        console.error("Error updating education:", error);
+        setEducations(
+          educations.map((edu) =>
+            edu.educationId === editingEducation.educationId
+              ? { ...educationData, educationId: editingEducation.educationId }
+              : edu
+          )
+        );
+        setEditingEducation(null);
+        setShowEducationForm(false);
+      }
+    }
+  };
+
+  const handleEditEducation = (education: any) => {
+    setEditingEducation(education);
+    setShowEducationForm(true);
+  };
+
+  const handleDeleteEducation = async (educationId: number) => {
+    try {
+      await deleteEducation(educationId);
+      setEducations(
+        educations.filter((edu) => edu.educationId !== educationId)
+      );
+      toast.success("Education record deleted successfully");
+    } catch (error) {
+      console.error("Error deleting education:", error);
+      toast.error("Failed to delete education record");
+    }
+  };
+
+  const [educationData, setEducationData] = useState<any>(null);
 
   // Get Operations
   useEffect(() => {
     if (router.isReady) {
       const id = router.query.id;
+      setContactId(Number(id));
       fetchCandidate(Number(id))
         .then((data) => {
           setCurrentCandidate(data);
           setInitialData(data);
           setFormData(data);
-          console.log(data);
         })
         .catch((error) => console.log(error));
 
       fetchAllLocations().then((data) => {
         const allLocatoins = data;
         setLocations(allLocatoins);
+      });
+
+      fetchEducationsByContact(Number(id)).then((data) => {
+        setEducations(data);
+      });
+
+      getContactImage(Number(id)).then((data) => {
+        setImgSrc(data);
+      });
+
+      fetchEducationsByContact(Number(id)).then((data) => {
+        setEducationData(data[0]);
+        console.log(data);
       });
 
       fetchAllContactTechnologies()
@@ -303,6 +950,14 @@ export default function Candidates() {
         }
         setHiringTypes(types);
       });
+
+      fetchAllUniversities().then((data) => {
+        setUniversities(data);
+      });
+
+      fetchAllCourses().then((data) => {
+        setCourses(data);
+      });
     }
 
     const { mode } = router.query;
@@ -320,125 +975,6 @@ export default function Candidates() {
     isSkillVisible,
     isUpdateCertificateVisible,
   ]);
-
-  // Post Operations
-
-  const postSkill = async () => {
-    try {
-      // Check if a skill is selected
-      if (selectedSkill.length === 0) {
-        toast.error("Please select a skill", {
-          position: "top-center",
-        });
-        return;
-      }
-      if (selectedSkill.length > 30) {
-        toast.error("Please select a skill with less than 30 characters", {
-          position: "top-center",
-        });
-      }
-
-      // Check if if the selected skill exist in the candidate's technologies array
-      if (
-        technologies?.some(
-          (tech) =>
-            tech.technology.technology.toLowerCase() ===
-            selectedSkill.toLowerCase()
-        )
-      ) {
-        toast.error("Skill already added", {
-          position: "top-center",
-        });
-        setSelectedSkill("");
-        setExpLevel("");
-        setTechExp("");
-        return;
-      }
-
-      // Check if the skill exists in masterTech
-      const skillExists = masterTech?.some(
-        (tech) => tech.technology.toLowerCase() === selectedSkill.toLowerCase()
-      );
-
-      let tempId;
-      if (skillExists) {
-        // If the skill exists, find its ID
-        tempId = masterTech?.find(
-          (tech) =>
-            tech.technology.toLowerCase() === selectedSkill.toLowerCase()
-        );
-      } else {
-        // If the skill doesn't exist, create it
-        const newSkill = {
-          technology: selectedSkill,
-
-          //  fields for the createTechnology API
-        };
-
-        // Create the new technology
-        const createdSkill = await createTechnology(newSkill);
-
-        // Update masterTech with the new skill
-        setMasterTech((prev) =>
-          prev ? [...prev, createdSkill] : [createdSkill]
-        );
-
-        // Use the newly created skill's ID
-        tempId = createdSkill;
-      }
-
-      // Add the skill to technologies
-      const updatedTechnologies = technologies
-        ? [
-            ...technologies,
-            {
-              technology: { technology: selectedSkill },
-              experience: techExp,
-              expertiseLevel: expLevel,
-            },
-          ]
-        : [];
-      setTechnologies(updatedTechnologies);
-
-      // Associate the skill with the candidate
-      if (tempId && techExp && expLevel) {
-        const result = await createContactTechnology({
-          contactDetails: currentCandidate,
-          technology: tempId,
-          experience: techExp,
-          expertiseLevel: expLevel,
-        });
-        console.log("Skill added to candidate:", result.technology.technology);
-        setIsSkillAdded(true);
-      } else if (tempId) {
-        const result = await createContactTechnology({
-          contactDetails: currentCandidate,
-          technology: tempId,
-        });
-        setIsSkillAdded(true);
-        console.log("Skill added to candidate:", result.technology.technology);
-      }
-
-      // Reset form fields
-      setSelectedSkill("");
-      setExpLevel("");
-      setTechExp("");
-      setTimeout(() => {
-        setIsSkillAdded(true);
-      }, 3000);
-
-      // Show success message
-      toast.success("Skill added successfully", {
-        position: "top-center",
-      });
-      setIsSkillAdded(true);
-    } catch (error) {
-      console.error("Error adding skill:", error);
-      toast.error("Failed to add skill. Please try again.", {
-        position: "top-center",
-      });
-    }
-  };
 
   // Put Operation
   const handleUpdateSkill = async (id: number) => {
@@ -463,13 +999,6 @@ export default function Candidates() {
         position: "top-center",
       });
     }
-  };
-
-  const formatPhoneNumber = (phoneNumber: string) => {
-    if (!phoneNumber) return "-";
-
-    const phone = parsePhoneNumberFromString(phoneNumber);
-    return phone?.formatInternational() || phoneNumber;
   };
 
   const handleUpdateContactTechnology = async (event: React.MouseEvent) => {
@@ -531,6 +1060,19 @@ export default function Candidates() {
     setActiveTab(tab);
   };
 
+  const combinedCandidateData = {
+    ...currentCandidate,
+    educationId: educationData?.educationId || null,
+    courseName: educationData?.course || "",
+    university: educationData?.university || "",
+    specialization: educationData?.specialization || "",
+    courseType: educationData?.courseType || "",
+    startYear: educationData?.startYear || "",
+    endYear: educationData?.endYear || "",
+    gradingSystem: educationData?.gradingSystem || "",
+    marks: educationData?.marks || "",
+  };
+
   if (currentCandidate == null) {
     // Static pre-generated HTML
     return (
@@ -551,6 +1093,14 @@ export default function Candidates() {
     <MainLayout>
       <section className="space-y-10 relative md:text-base text-xs">
         <div className="bg-white rounded">
+          <div
+            className="flex items-center gap-2 px-8 pt-4 text-xl text-cyan-500 cursor-pointer hover:text-cyan-600"
+            onClick={() => router.back()}
+          >
+            <ArrowBigLeftDashIcon className="w-6 h-6" />
+            <button className="border-b">Back to Previous Page</button>
+          </div>
+
           {/* Header Section */}
           <div className="flex items-start justify-between p-6 border-b border-gray-200">
             <div className="flex items-start space-x-4">
@@ -589,13 +1139,7 @@ export default function Candidates() {
                     <Building2 className="w-4 h-4 text-cyan-600 font-semibold" />
                     <span>{currentCandidate.companyName}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <GraduationCap className="w-4 h-4 text-cyan-600 font-semibold" />
-                    <span>
-                      {currentCandidate.highestEducation}(
-                      {currentCandidate.designation})
-                    </span>
-                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Twitter className="w-4 h-4 text-cyan-600 font-semibold" />
                     <span>{currentCandidate.twitter ?? "NA"}</span>
@@ -608,8 +1152,12 @@ export default function Candidates() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Link2 className="w-4 h-4 text-cyan-600 font-semibold" />
-                    <span className="text-blue-600">
-                      <a href={currentCandidate.linkedin} target="_blank">
+                    <span>
+                      <a
+                        href={currentCandidate.linkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {currentCandidate.linkedin ?? "NA"}
                       </a>
                     </span>
@@ -620,9 +1168,7 @@ export default function Candidates() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Github className="w-4 h-4 text-cyan-600 font-semibold" />
-                    <span className="text-blue-600">
-                      {currentCandidate.github ?? "NA"}
-                    </span>
+                    <span>{currentCandidate.github ?? "NA"}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Phone className="w-4 h-4 text-cyan-600 font-semibold" />
@@ -630,9 +1176,7 @@ export default function Candidates() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Globe className="w-4 h-4 text-cyan-600 font-semibold" />
-                    <span className="text-blue-600">
-                      {currentCandidate.blog ?? "NA"}
-                    </span>
+                    <span>{currentCandidate.blog ?? "NA"}</span>
                   </div>
                 </div>
               </div>
@@ -665,11 +1209,11 @@ export default function Candidates() {
             )}
 
             {isFormVisible && currentCandidate.contactId && (
-              <Popup onClose={() => setIsFormVisible(false)}>
+              <Popup>
                 <div className="my-8">
                   <ProfileUpdateForm
                     autoClose={() => setIsFormVisible(false)}
-                    initialValues={currentCandidate}
+                    initialValues={combinedCandidateData}
                     masterLocations={locations}
                     preferredJobModes={preferredJobType}
                     hiringTypes={hiringTypes}
@@ -702,7 +1246,7 @@ export default function Candidates() {
                     : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Skills & Others
+                Career & Skills Overview
               </button>
               <button
                 onClick={() => onTabChange("resume")}
@@ -805,7 +1349,9 @@ export default function Candidates() {
                               ? hiringTypes
                                   .map((item) => item["hiringType"])
                                   .join(", ")
-                              : hiringTypes?.length === 1 ? hiringTypes[0].hiringType : "-"}
+                              : hiringTypes?.length === 1
+                              ? hiringTypes[0].hiringType
+                              : "-"}
                           </span>
                         </div>
 
@@ -879,12 +1425,12 @@ export default function Candidates() {
                                 new Date(
                                   currentCandidate.dob
                                 ).toLocaleDateString()}
-                              {!currentCandidate?.dob && "--"} 
+                              {!currentCandidate?.dob && "--"}
                             </span>
                           </div>
                           <div className="flex justify-between border-b border-gray-100 pb-2">
                             <span className="text-sm font-medium text-gray-500">
-                              Phone
+                              Secondary Number
                             </span>
                             <span className="text-sm font-semibold text-gray-900">
                               {currentCandidate?.secondaryNumber ?? "NA"}
@@ -897,7 +1443,6 @@ export default function Candidates() {
                             <span className="text-sm font-semibold text-gray-900 text-right">
                               {currentCandidate?.addressLocality ?? "NA"}
                             </span>
-                            
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-500">
@@ -930,7 +1475,7 @@ export default function Candidates() {
               masterTech &&
               technologies &&
               masterTech.length > 0 ? (
-                <Popup onClose={() => setIsSkillVisible(false)}>
+                <Popup>
                   <AddSkillsForm
                     technologis={masterTech}
                     candidateTechs={technologies}
@@ -938,9 +1483,7 @@ export default function Candidates() {
                     autoClose={() => setIsSkillVisible(false)}
                   ></AddSkillsForm>
                 </Popup>
-              ) : (
-                ""
-              )}
+              ) : null}
 
               {technologies && technologies.length > 0 ? (
                 <div
@@ -1028,12 +1571,14 @@ export default function Candidates() {
                     <p className="text-base text-[#888888] text-center">
                       Add New skills and they will show up here
                     </p>
-                    <button
-                      className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 mt-4 py-2 rounded"
-                      onClick={() => setIsSkillVisible(true)}
-                    >
-                      Add New Skill
-                    </button>
+                    {isEdit && (
+                      <button
+                        className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 mt-4 py-2 rounded"
+                        onClick={() => setIsSkillVisible(true)}
+                      >
+                        Add New Skill
+                      </button>
+                    )}
                   </div>
                 </>
               )}
@@ -1092,7 +1637,7 @@ export default function Candidates() {
                       )}
                     </div>
                     {isDomainVisible && masterDomains && (
-                      <Popup onClose={() => setIsDomainVisible(false)}>
+                      <Popup>
                         <AddCandidateDomain
                           masterDomains={masterDomains}
                           contactId={currentCandidate.contactId}
@@ -1151,11 +1696,7 @@ export default function Candidates() {
                               {isUpdateCertificateVisible &&
                                 masterCertificates &&
                                 selectedCertificate && (
-                                  <Popup
-                                    onClose={() =>
-                                      setIsUpdateCertificateVisible(false)
-                                    }
-                                  >
+                                  <Popup>
                                     <UpdateCandidateCertificate
                                       onClose={() =>
                                         setIsUpdateCertificateVisible(false)
@@ -1239,7 +1780,7 @@ export default function Candidates() {
                   </div>
                 </div>
                 {isCertificateVisible && masterCertificates && (
-                  <Popup onClose={() => setIsCertificateVisible(false)}>
+                  <Popup>
                     <AddCandidateCertificate
                       masterCertificates={masterCertificates}
                       onCancel={() => setIsCertificateVisible(false)}
@@ -1268,7 +1809,7 @@ export default function Candidates() {
                   {isCompanyVisible &&
                     candidateCompanies &&
                     masterCompanies && (
-                      <Popup onClose={() => setIsCompanyVisible(false)}>
+                      <Popup>
                         <AddCandidateCompany
                           contactId={currentCandidate.contactId}
                           masterCompanies={masterCompanies}
@@ -1280,8 +1821,11 @@ export default function Candidates() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {candidateCompanies?.length ? (
-                    candidateCompanies?.map((company: any) => (
-                      <div className=" bg-white rounded-lg p-4 border-2 border-cyan-400">
+                    candidateCompanies?.map((company: any, index) => (
+                      <div
+                        key={company.contactCompanyId}
+                        className=" bg-white rounded-lg p-4 border-2 border-cyan-400"
+                      >
                         <div className="flex items-center justify-between mb-4">
                           <h2 className="text-xl font-bold text-gray-800">
                             {company.company.companyName}
@@ -1347,11 +1891,155 @@ export default function Candidates() {
                   )}
                 </div>
               </section>
+
+              <section>
+                <div className="flex items-center space-x-2">
+                  <div className="w-full">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl text-cyan-500 font-semibold">
+                        Education
+                      </h3>
+                      {isEdit && (
+                        <button
+                          onClick={() => {
+                            setEditingEducation(null);
+                            setShowEducationForm(true);
+                          }}
+                          className="w-40 h-10 bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded flex items-center justify-center gap-2"
+                        >
+                          <span className="truncate">Add Education</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {educations.length > 0 ? (
+                      <div className="overflow-x-auto rounded-md">
+                        <table className="min-w-full text-xs md:text-base border border-gray-200">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="font-semibold text-left text-cyan-500 px-2 py-1 md:px-4 md:py-2">
+                                University
+                              </th>
+                              <th className="font-semibold text-left text-cyan-500 px-2 py-1 md:px-4 md:py-2">
+                                Course
+                              </th>
+                              <th className="font-semibold text-left text-cyan-500 px-2 py-1 md:px-4 md:py-2">
+                                Specialization
+                              </th>
+                              <th className="font-semibold text-left text-cyan-500 px-2 py-1 md:px-4 md:py-2">
+                                Duration
+                              </th>
+                              <th className="font-semibold text-left text-cyan-500 px-2 py-1 md:px-4 md:py-2">
+                                Grade
+                              </th>
+                              {isEdit && (
+                                <th className="font-semibold text-center text-cyan-500 px-2 py-1 md:px-4 md:py-2">
+                                  Actions
+                                </th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {educations.map((education) => (
+                              <tr
+                                key={education.educationId}
+                                className="hover:bg-gray-50 dark:hover:text-black"
+                              >
+                                <td className="text-left px-2 py-1 md:px-4 md:py-4 border border-gray-200">
+                                  {education.university.universityName}
+                                </td>
+                                <td className="text-left px-2 py-1 md:px-4 md:py-2 border border-gray-200">
+                                  <div>
+                                    <div className="font-medium">
+                                      {education.course.courseName}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {education.course.level} •{" "}
+                                      {education.courseType}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="text-left px-2 py-1 md:px-4 md:py-2 border border-gray-200">
+                                  {education.specialization || "-"}
+                                </td>
+                                <td className="text-left px-2 py-1 md:px-4 md:py-2 border border-gray-200">
+                                  {education.startYear} - {education.endYear}
+                                </td>
+                                <td className="text-left px-2 py-1 md:px-4 md:py-2 border border-gray-200">
+                                  {education.marks}{" "}
+                                  {education.gradingSystem === "Percentage"
+                                    ? "%"
+                                    : "CGPA"}
+                                </td>
+                                {isEdit && (
+                                  <td className="text-center px-2 py-1 md:px-4 md:py-2 border border-gray-200">
+                                    <div className="flex justify-around">
+                                      <button
+                                        className="text-cyan-600 hover:text-cyan-700 focus:outline-none flex items-center gap-1"
+                                        onClick={() =>
+                                          handleEditEducation(education)
+                                        }
+                                      >
+                                        <Edit3 className="w-4 h-4" />
+                                        Update
+                                      </button>
+                                      <button
+                                        className="text-red-600 hover:text-red-700 focus:outline-none flex items-center gap-1"
+                                        onClick={() =>
+                                          handleDeleteEducation(
+                                            education.educationId
+                                          )
+                                        }
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center rounded-lg w-full max-w-md mx-auto py-12">
+                        <div className="mb-6">
+                          <GraduationCap className="w-20 h-20 text-cyan-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+                          No Education Added Yet!
+                        </h2>
+                        <p className="text-base text-gray-600 text-center mb-4">
+                          Add your educational qualifications and they will show
+                          up here
+                        </p>
+                      </div>
+                    )}
+
+                    {showEducationForm && (
+                      <EducationForm
+                        education={editingEducation || undefined}
+                        onSave={
+                          editingEducation
+                            ? handleUpdateEducation
+                            : handleAddEducation
+                        }
+                        onCancel={() => {
+                          setShowEducationForm(false);
+                          setEditingEducation(null);
+                        }}
+                        isEdit={!!editingEducation}
+                      />
+                    )}
+                  </div>
+                </div>
+              </section>
             </div>
           )}
 
           {isSkillUpdated && selectedTech && (
-            <Popup onClose={() => setIsSkillUpdated(false)} styleMod="h-full">
+            <Popup styleMod="h-full">
               <div className="bg-white rounded-2xl shadow-lg p-8 max-w-2xl mx-auto mt-16">
                 <h1 className="text-2xl font-bold text-gray-800 mb-8">
                   Update Skill
@@ -1585,7 +2273,7 @@ export default function Candidates() {
                                 >
                                   <path
                                     fillRule="evenodd"
-                                    d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h2zm4-3a1 1 0 00-1 1v1h2V4a1 1 0 00-1-1z"
+                                    d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v6a2 2 0 01-2-2H4a2 2 0 01-2-2V8a2 2 0 012-2h2zm4-3a1 1 0 00-1 1v1h2V4a1 1 0 00-1-1z"
                                     clipRule="evenodd"
                                   />
                                 </svg>

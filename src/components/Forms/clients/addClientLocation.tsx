@@ -24,7 +24,6 @@ const AddClientLocation = ({
       pincode: null,
       address1: null,
       hrContactPerson: null,
-      technicalPerson: null,
       hrMobileNumber: null,
       companyLandline: null,
       hrContactPersonEmail: null,
@@ -112,7 +111,7 @@ const AddClientLocation = ({
   };
 
   return (
-    <Popup onClose={() => autoClose()}>
+    <Popup>
       <div className="min-h-screen my-8">
         <div className="bg-white shadow-lg rounded-2xl mx-auto max-w-4xl">
           {/* Header */}
@@ -199,6 +198,77 @@ const AddClientLocation = ({
                       <span>{formik.errors.pincode.toString()}</span>
                     </div>
                   )}
+                </div>
+
+                {/* Country */}
+                <div>
+                  <label
+                    htmlFor="country"
+                    className="block font-semibold text-gray-700 mb-2"
+                  >
+                    Country <span className="text-red-500">*</span>
+                  </label>
+                  <LocationAutocomplete
+                    name="country"
+                    id="country"
+                    placeholder="Select Country"
+                    styleMod="w-full px-0 py-1 border-0 border-b border-gray-300 focus:ring-0 text-sm placeholder-gray-400 rounded-none"
+                    value={formik.values.country.locationDetails ?? ""}
+                    onChange={onChangeCountry}
+                    options={masterLocations}
+                    onAdd={addnewCountry}
+                  />
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="checkbox"
+                      id="isHeadQuarter"
+                      name="isHeadQuarter"
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                    />
+                    <label
+                      htmlFor="isHeadQuarter"
+                      className="text-gray-400 text-sm"
+                    >
+                      This is HeadQuarters
+                    </label>
+                    {formik.touched.isHeadQuarter &&
+                      formik.errors.isHeadQuarter && (
+                        <div className="flex items-center text-sm text-center gap-1 text-red-600 font-medium">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mr-1.5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <span>{formik.errors.isHeadQuarter}</span>
+                        </div>
+                      )}
+                  </div>
+                  {formik.touched.country?.locationId &&
+                    formik.errors.country?.locationId && (
+                      <div className="flex text-sm items-center mt-4 text-center text-red-600 font-medium">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 mr-1.5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span>{formik.errors.country?.locationId}</span>
+                      </div>
+                    )}
                 </div>
 
                 {/* State */}
@@ -292,77 +362,6 @@ const AddClientLocation = ({
                       </div>
                     )}
                 </div>
-
-                {/* Country */}
-                <div>
-                  <label
-                    htmlFor="country"
-                    className="block font-semibold text-gray-700 mb-2"
-                  >
-                    Country <span className="text-red-500">*</span>
-                  </label>
-                  <LocationAutocomplete
-                    name="country"
-                    id="country"
-                    placeholder="Select Country"
-                    styleMod="w-full px-0 py-1 border-0 border-b border-gray-300 focus:ring-0 text-sm placeholder-gray-400 rounded-none"
-                    value={formik.values.country.locationDetails ?? ""}
-                    onChange={onChangeCountry}
-                    options={masterLocations}
-                    onAdd={addnewCountry}
-                  />
-                  <div className="flex items-center gap-2 mt-1">
-                    <input
-                      type="checkbox"
-                      id="isHeadQuarter"
-                      name="isHeadQuarter"
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                    />
-                    <label
-                      htmlFor="isHeadQuarter"
-                      className="text-gray-400 text-sm"
-                    >
-                      This is HeadQuarters
-                    </label>
-                    {formik.touched.isHeadQuarter &&
-                      formik.errors.isHeadQuarter && (
-                        <div className="flex items-center text-sm text-center gap-1 text-red-600 font-medium">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 mr-1.5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <span>{formik.errors.isHeadQuarter}</span>
-                        </div>
-                      )}
-                  </div>
-                  {formik.touched.country?.locationId &&
-                    formik.errors.country?.locationId && (
-                      <div className="flex text-sm items-center mt-4 text-center text-red-600 font-medium">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-1.5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span>{formik.errors.country?.locationId}</span>
-                      </div>
-                    )}
-                </div>
               </div>
             </div>
 
@@ -407,44 +406,6 @@ const AddClientLocation = ({
                           />
                         </svg>
                         <span>{formik.errors.hrContactPerson}</span>
-                      </div>
-                    )}
-                </div>
-
-                {/* Technical Person */}
-                <div>
-                  <label
-                    htmlFor="technicalPerson"
-                    className="block font-semibold text-gray-700 mb-2"
-                  >
-                    Technical Person <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="technicalPerson"
-                    name="technicalPerson"
-                    type="text"
-                    className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
-                    placeholder="Enter Technical Person Name"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    // value={formik.values.technicalPerson}
-                  />
-                  {formik.touched.technicalPerson &&
-                    formik.errors.technicalPerson && (
-                      <div className="flex text-sm items-center mt-4 text-center text-red-600 font-medium">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-1.5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span>{formik.errors.technicalPerson}</span>
                       </div>
                     )}
                 </div>

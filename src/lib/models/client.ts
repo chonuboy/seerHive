@@ -168,19 +168,19 @@ export const step1Schema = yup.object().shape({
     .min(3, "Must be at least 3 characters")
     .max(50, "Must be 50 characters or less")
     .required("Job title is required"),
-  insertedBy: yup
-    .string()
-    .min(3, "Must be at least 3 characters")
-    .max(50, "Must be 50 characters or less")
-    .required("This Field is Required"),
   isJobActive: yup.string().required("Select status"),
+  locations: yup
+    .array()
+    .min(1, "At least one location is required")
+    .required("Locations are required"),
 });
 
 export const step2Schema = yup.object().shape({
   preferredJobMode: yup.string().required("Preferred Job Mode is required"),
   salaryInCtc: yup.number().required("Salary is required"),
   noOfOpenings: yup.number().required("Number of openings is required"),
-  experience: yup.string().required("Experience is required"),
+  minimumExperience: yup.string().required("Minimum Experience is required"),
+  maximumExperience: yup.string().nullable(),
   hiringType: yup.string().required("Hiring Type is required"),
   jobPostType: yup.string().required("Job type is required"),
 });
@@ -212,10 +212,7 @@ export const clientFormSchema = yup.object().shape({
   pannumber: yup
     .string()
     .nullable()
-    .matches(
-      /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i,
-      "Invalid PAN format"
-    )
+    .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i, "Invalid PAN format")
     .length(10, "PAN must be exactly 10 characters"),
 });
 
@@ -237,19 +234,16 @@ export const clientValidationSchema = yup.object().shape({
   pannumber: yup
     .string()
     .nullable()
-    .matches(
-      /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i,
-      "Invalid PAN format"
-    )
+    .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i, "Invalid PAN format")
     .length(10, "PAN must be exactly 10 characters"),
 });
 
 export const clientLocationSchema = yup.object().shape({
   pincode: yup
-      .string()
-      .typeError("Pincode must be a number")
-      .matches(/^[0-9\s-]{3,10}$/, "Invalid pincode format")
-      .required("Pincode is required"),
+    .string()
+    .typeError("Pincode must be a number")
+    .matches(/^[0-9\s-]{3,10}$/, "Invalid pincode format")
+    .required("Pincode is required"),
   address1: yup
     .string()
     .required("Address is required")
@@ -262,12 +256,6 @@ export const clientLocationSchema = yup.object().shape({
     .max(30, "Must be 50 characters or less")
     .matches(/^[a-zA-Z ]+$/, "Only alphabets are allowed"),
 
-  technicalPerson: yup
-    .string()
-    .required("Technical Person is required")
-    .min(3, "Must be at least 3 characters")
-    .max(30, "Must be 50 characters or less")
-    .matches(/^[a-zA-Z ]+$/, "Only alphabets are allowed"),
   hrMobileNumber: yup
     .string()
     .required("HR Mobile Number is required")
@@ -334,7 +322,8 @@ export const jobUpdateSchema = yup.object().shape({
     .max(50, "Must be 50 characters or less")
     .nullable(),
   jobTitle: yup
-    .string().matches(/^[a-zA-Z ]+$/, "Only alphabets are allowed")
+    .string()
+    .matches(/^[a-zA-Z ]+$/, "Only alphabets are allowed")
     .min(3, "Must be at least 3 characters")
     .max(50, "Must be 50 characters or less")
     .nullable(),
@@ -348,7 +337,8 @@ export const jobUpdateSchema = yup.object().shape({
   isJobActive: yup.string().nullable(),
   jobPostType: yup.string().min(3, "Must be at least 3 characters").nullable(),
   insertedBy: yup
-    .string().matches(/^[a-zA-Z ]+$/, "Only alphabets are allowed")
+    .string()
+    .matches(/^[a-zA-Z ]+$/, "Only alphabets are allowed")
     .min(3, "Must be at least 3 characters")
     .max(30, "Must be 30 characters or less")
     .nullable(),
@@ -363,7 +353,6 @@ export interface clientLocationFormValues {
   pincode: string | null;
   address1: string | null;
   hrContactPerson: string | null;
-  technicalPerson: string | null;
   hrMobileNumber: string | null;
   companyLandline: string | null;
   hrContactPersonEmail: string | null;
@@ -379,3 +368,90 @@ export interface clientLocationFormValues {
   financeNumber: string | null;
   isBillingStateTamilNadu: boolean;
 }
+
+export interface addClientFormValues {
+  isHeadQuarter: boolean;
+  clientLocationId?: number;
+  pincode: string | null;
+  address1: string | null;
+  hrContactPerson: string | null;
+  hrMobileNumber: string | null;
+  companyLandline: string | null;
+  hrContactPersonEmail: string | null;
+  client: {
+    clientId: number;
+  };
+  state: location;
+  cityId: location;
+  country: location;
+  isBillingStateTamilNadu: boolean;
+}
+
+export const addClientLocationSchema = yup.object().shape({
+  pincode: yup
+    .string()
+    .typeError("Pincode must be a number")
+    .matches(/^[0-9\s-]{3,10}$/, "Invalid pincode format")
+    .required("Pincode is required"),
+  address1: yup
+    .string()
+    .required("Address is required")
+    .min(3, "Must be at least 3 characters")
+    .max(250, "Must be 250 characters or less"),
+  hrContactPerson: yup
+    .string()
+    .required("HR Contact Person is required")
+    .min(3, "Must be at least 3 characters")
+    .max(30, "Must be 50 characters or less")
+    .matches(/^[a-zA-Z ]+$/, "Only alphabets are allowed"),
+
+  hrMobileNumber: yup
+    .string()
+    .required("HR Mobile Number is required")
+    .matches(/^(?:\+?\d{1,3}[- ]?)?\d{8,12}$/i, "Invalid Mobile number format"),
+  companyLandline: yup
+    .string()
+    .required("Company Landline is required")
+    .matches(
+      /^(?:\+?\d{1,3}[- ]?)?\d{8,12}$/i,
+      "Invalid landline number format"
+    ),
+  hrContactPersonEmail: yup
+    .string()
+    .matches(
+      /^[a-zA-Z0-9][-a-zA-Z0-9._]+@([-a-zA-Z0-9]+\.)+[a-zA-Z]{2,4}$/i,
+      "Invalid email format"
+    )
+    .required("Email is required"),
+  state: yup
+    .object()
+    .shape({
+      locationId: yup.number().min(1, "Select a state"),
+    })
+    .required("State is required"),
+  client: yup
+    .object()
+    .shape({
+      clientId: yup
+        .number()
+        .required("Client is required")
+        .min(1, "Select a client"),
+    })
+    .required("Client is required"),
+  country: yup
+    .object()
+    .shape({
+      locationId: yup
+        .number()
+        .required("Select a Country")
+        .min(1, "Select a Country"),
+    })
+    .required("Country is required"),
+  cityId: yup.object().shape({
+    locationId: yup
+      .number()
+      .required("City is required")
+      .min(1, "Select a city"),
+  }),
+  isHeadQuarter: yup.boolean().required("Is This HQ ?"),
+});

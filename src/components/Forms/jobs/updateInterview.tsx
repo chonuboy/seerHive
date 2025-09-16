@@ -15,6 +15,90 @@ import {
   deleteInterviewTech,
   updateInterviewTech,
 } from "@/api/interviews/Interview-Tech";
+import { createTechnology, fetchAllTechnologies } from "@/api/master/masterTech";
+
+// Rating Selection Modal Component
+const RatingSelectionModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  technologyName,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (rating: number) => void;
+  technologyName: string;
+}) => {
+  const [selectedRating, setSelectedRating] = useState<number>(1);
+
+  if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    onConfirm(selectedRating);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Rate {technologyName}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-700 mb-4 text-center">
+            Select Rating
+          </label>
+          <div className="flex items-center justify-center space-x-12 mb-2">
+            {[1, 2, 3, 4, 5].map((rating) => (
+              <button
+                key={rating}
+                type="button"
+                onClick={() => setSelectedRating(rating)}
+                className={`w-10 h-10 rounded-lg border text-sm font-medium transition-colors ${
+                  selectedRating === rating
+                    ? "font-semibold border-2 border-cyan-500 bg-cyan-50"
+                    : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                {rating}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 px-2">
+            <span>Poor</span>
+            <span>Excellent</span>
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1 text-sm flex-1 sm:flex-none border-2 border-cyan-500 text-cyan-500 rounded-lg hover:bg-cyan-50 transition-colors duration-200 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            className="px-4 py-2 text-sm font-medium text-white bg-cyan-500 rounded-md hover:bg-cyan-600 transition-colors"
+          >
+            Confirm Rating
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function InterviewForm({
   className,
@@ -39,6 +123,13 @@ export default function InterviewForm({
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMasterTechs, setFilteredMasterTechs] = useState<any[]>([]);
   const [editingTech, setEditingTech] = useState<number | null>(null);
+  const [ratingModal, setRatingModal] = useState<{
+    isOpen: boolean;
+    selectedTech: any | null;
+  }>({
+    isOpen: false,
+    selectedTech: null,
+  });
 
   useEffect(() => {
     if (initialValues.softskillsRating) {
@@ -61,6 +152,8 @@ export default function InterviewForm({
       setTechnologies(processedTechs);
     }
   }, [technologiesData]);
+
+
 
   // Filter master technologies based on search term and exclude already added ones
   useEffect(() => {
@@ -165,43 +258,82 @@ export default function InterviewForm({
     }
   };
 
-  const handleAddTechnology = async (masterTech: any) => {
+  const handleAddTechnologyClick = (masterTech: any) => {
     if (technologies.some((t) => t.technology.techId === masterTech.techId)) {
       toast.error("Technology already added", { position: "top-center" });
+      return;
     }
+    
+    // Open rating modal instead of directly adding
+    setRatingModal({
+      isOpen: true,
+      selectedTech: masterTech,
+    });
+    setSearchTerm("");
+  };
+
+  const handleConfirmRating = async (rating: number) => {
+    if (!ratingModal.selectedTech) return;
+    
     try {
       const reqData = {
         technology: {
-          techId: masterTech.techId,
+          techId: ratingModal.selectedTech.techId,
         },
         interviewRound: {
           roundId: id,
         },
-        techRating: 1,
+        techRating: rating,
       };
+      
       const response = await createInterviewTech(reqData);
       console.log(response);
+      
       const newTech = {
+        interviewTechId: response.data?.interviewTechId || Date.now(), // Use actual ID from response or temporary
         technology: {
-          techId: masterTech.techId,
-          technology: masterTech.technology,
-          insertedOn: masterTech.insertedOn,
+          techId: ratingModal.selectedTech.techId,
+          technology: ratingModal.selectedTech.technology,
+          insertedOn: ratingModal.selectedTech.insertedOn,
         },
-        techRating: 1,
+        techRating: rating,
       };
-      setShowAddTech(false);
-      setSearchTerm("");
+      
       setTechnologies((prev) => [...prev, newTech]);
+      setShowAddTech(false);
+      toast.success("Technology added successfully");
     } catch (error) {
       console.error("Error adding technology:", error);
       toast.error("Failed to add technology");
     }
   };
 
+    const addNewTechnology = () => {
+    createTechnology({
+      technology: searchTerm,
+    }).then((data) => {
+      if (data.technology) {
+        fetchAllTechnologies().then((data) => {
+          masterTechnologies = data;
+        });
+        handleAddTechnologyClick(data);
+      }
+      console.log(data);
+    })
+  };
+
   const isScheduled = formik.values.interviewStatus === "Scheduled";
 
   return (
     <div className="my-8">
+      {/* Rating Selection Modal */}
+      <RatingSelectionModal
+        isOpen={ratingModal.isOpen}
+        onClose={() => setRatingModal({ isOpen: false, selectedTech: null })}
+        onConfirm={handleConfirmRating}
+        technologyName={ratingModal.selectedTech?.technology || ""}
+      />
+      
       <div className="mx-auto max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100">
         {/* Header */}
         <div className="px-8 pt-6 border-b border-gray-100">
@@ -213,7 +345,7 @@ export default function InterviewForm({
         <form className="p-8 space-y-8" onSubmit={formik.handleSubmit}>
           {/* Basic Details Section */}
           <div>
-            <h2 className="text-lg font-medium text-cyan-500 mb-6">
+            <h2 className="text-xl font-medium text-cyan-500 mb-6">
               Basic Details
             </h2>
             <div className="space-y-8">
@@ -309,7 +441,7 @@ export default function InterviewForm({
                           formik.setFieldValue("interviewTime", null);
                         }
                       }}
-                      className="w-full border-0 py-0.5 border-b border-gray-300 focus:border-blue-500 focus:ring-0 text-sm placeholder-gray-400 focus:outline-none"
+                      className="w-full border-0 py-3 border-b border-gray-300 focus:border-blue-500 focus:ring-0 placeholder-gray-400 focus:outline-none"
                     />
                   </div>
                   {formik.touched.interviewTime &&
@@ -371,7 +503,7 @@ export default function InterviewForm({
 
           {/* Assessment Section */}
           <div>
-            <h2 className="text-lg font-medium text-cyan-500 mb-6">
+            <h2 className="text-xl font-medium text-cyan-500 mb-6">
               Assessment
             </h2>
 
@@ -419,7 +551,7 @@ export default function InterviewForm({
                           <button
                             key={tech.techId}
                             type="button"
-                            onClick={() => handleAddTechnology(tech)}
+                            onClick={() => handleAddTechnologyClick(tech)}
                             className="w-full text-left px-4 py-2 text-sm hover:bg-cyan-50 hover:text-cyan-700 transition-colors border-b border-gray-100 last:border-b-0"
                           >
                             {tech.technology}
@@ -428,9 +560,9 @@ export default function InterviewForm({
                       </div>
                     )}
 
-                    {filteredMasterTechs.length === 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4 text-center text-sm text-gray-500">
-                        No technologies found matching "{searchTerm}"
+                    {filteredMasterTechs.length === 0 && searchTerm && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4 text-center cursor-pointer text-sm text-gray-500" onClick={addNewTechnology}>
+                        Add New Technology "{searchTerm}"
                       </div>
                     )}
                   </div>
@@ -530,12 +662,12 @@ export default function InterviewForm({
 
             {/* Soft Skill Rating - Only show if not scheduled */}
             {!isScheduled && (
-              <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-700 mb-4">
+              <div className="mb-8 flex items-center justify-between">
+                <label className="block text-sm font-semibold text-gray-700">
                   Soft Skill Rating <span className="text-red-500">*</span>
                 </label>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex space-x-32">
+                <div className="">
+                  <div className="space-x-20">
                     {[1, 2, 3, 4, 5].map((rating) => (
                       <button
                         key={rating}
@@ -552,10 +684,6 @@ export default function InterviewForm({
                       </button>
                     ))}
                   </div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Poor</span>
-                  <span>Excellent</span>
                 </div>
                 {formik.touched.softskillsRating &&
                   formik.errors.softskillsRating && (

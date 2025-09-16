@@ -7,6 +7,7 @@ import {
   Star,
   X,
   Award,
+  ArrowBigLeftDashIcon,
 } from "lucide-react";
 import { RecruitCandidateData } from "@/lib/models/recruitmentCandidate";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +22,7 @@ import {
 import { toast } from "react-toastify";
 import mammoth from "mammoth";
 import { position } from "html2canvas/dist/types/css/property-descriptors/position";
+import { useRouter } from "next/router";
 
 export default function RecruitmentCandidateCard({
   candidate,
@@ -42,6 +44,7 @@ export default function RecruitmentCandidateCard({
   const [updatedFileName, setUpdatedFileName] = useState<string | undefined>(
     undefined
   );
+  const router = useRouter();
 
   const getUpdatedFields = (initialValues: any, values: any) => {
     return Object.keys(values).reduce((acc: Record<string, any>, key) => {
@@ -234,10 +237,17 @@ export default function RecruitmentCandidateCard({
   }, [candidate]);
 
   return (
-    <div className="min-h-screen text-gray-800">
+    <div className="min-h-screen bg-white text-gray-800">
+      <div
+        className="flex items-center gap-2 px-8 pt-6 pb-2 text-xl text-cyan-500 cursor-pointer hover:text-cyan-600"
+        onClick={() => router.back()}
+      >
+        <ArrowBigLeftDashIcon className="w-6 h-6" />
+        <button className="border-b">Back to Previous Page</button>
+      </div>
       <main className="">
         <section className="space-y-10 relative md:text-base text-xs">
-          <div className="bg-white pb-24 rounded">
+          <div className="pb-24 rounded">
             {/* Header Section */}
             <div className="flex items-start justify-between p-6 border-b border-gray-200">
               <div className="flex items-start space-x-4">
@@ -340,7 +350,7 @@ export default function RecruitmentCandidateCard({
                         overflow: "auto",
                         padding: "20px",
                         marginTop: "40px",
-                        marginBottom:"40px",
+                        marginBottom: "40px",
                       }}
                       title="Candidate Resume"
                     />

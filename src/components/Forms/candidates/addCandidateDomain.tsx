@@ -39,14 +39,6 @@ export default function AddCandidateDomain({
 
   const handleDomainSelect = async (domainName: string) => {
     try {
-      // Check if domain is selected
-      // if (domainName.length === 0) {
-      //   toast.error("Please select a domain", {
-      //     position: "top-center",
-      //   });
-      //   return;
-      // }
-
       // Check if domain already exists in candidate's domains
       if (
         candidateDomains.some(
@@ -84,6 +76,7 @@ export default function AddCandidateDomain({
 
         // Create the new domain
         const createdDomain = await createDomain(newDomain);
+        console.log(createdDomain);
         
         // Update master domains with the new domain
         // Note: You might need to pass setMasterDomains as a prop if you want to update the parent state

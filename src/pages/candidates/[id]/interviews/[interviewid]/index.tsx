@@ -1,18 +1,22 @@
-import { useRouter } from "next/router"
-import { useEffect, useState } from "react"
-import MainLayout from "@/components/Layouts/layout"
-import { Popup } from "@/components/Elements/cards/popup"
-import DOMPurify from "dompurify"
-import type { Round, Technology } from "@/lib/models/candidate"
-import InterviewForm from "@/components/Forms/jobs/updateInterview"
-import AddRound from "@/components/Forms/jobs/addInterview"
-import type { Candidate } from "@/lib/definitions"
-import { fetchCandidate } from "@/api/candidates/candidates"
-import { fetchContactInterview, fetchInterviewsByContact } from "@/api/candidates/interviews"
-import { fetchInterviewRoundsByContactAndJob } from "@/api/interviews/InterviewRounds"
-import type { Interview } from "@/lib/models/candidate"
-import { fetchAllTechnologies } from "@/api/master/masterTech"
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import MainLayout from "@/components/Layouts/layout";
+import { Popup } from "@/components/Elements/cards/popup";
+import DOMPurify from "dompurify";
+import type { Round, Technology } from "@/lib/models/candidate";
+import InterviewForm from "@/components/Forms/jobs/updateInterview";
+import AddRound from "@/components/Forms/jobs/addInterview";
+import type { Candidate } from "@/lib/definitions";
+import { fetchCandidate } from "@/api/candidates/candidates";
 import {
+  fetchContactInterview,
+  fetchInterviewsByContact,
+} from "@/api/candidates/interviews";
+import { fetchInterviewRoundsByContactAndJob } from "@/api/interviews/InterviewRounds";
+import type { Interview } from "@/lib/models/candidate";
+import { fetchAllTechnologies } from "@/api/master/masterTech";
+import {
+  ArrowBigLeftDashIcon,
   BookOpen,
   Building2,
   Calendar,
@@ -31,53 +35,64 @@ import {
   Twitter,
   User,
   X,
-} from "lucide-react"
-import { toast } from "react-toastify"
-import { createInterviewTech, fetchAllInterviewTechs } from "@/api/interviews/interviewRoundTech"
+} from "lucide-react";
+import { toast } from "react-toastify";
+import {
+  createInterviewTech,
+  fetchAllInterviewTechs,
+} from "@/api/interviews/interviewRoundTech";
 
 export default function CandidateInterviews() {
-  const router = useRouter()
-  const { contactInterViewId } = router.query
-  const candidateId = Number(router.query.id)
-  const [addRoundEnabled, setAddRoundEnabled] = useState(false)
-  const [updateRoundEnabled, setUpdateRoundEnabled] = useState(false)
-  const [currentCandidate, setCurrentCandidate] = useState<Candidate | null>(null)
-  const [currentJobData, setCurrentJobData] = useState<Interview[] | null>(null)
-  const [allRounds, setAllRounds] = useState<Round[] | null>(null)
-  const [selectedRound, setSelectedRound] = useState<Round | null>(null)
-  const [masterTech, setMasterTech] = useState<any[] | null>(null)
-  const [job, setJob] = useState<any | null>(null)
-  const [overAllStatus, setOverAllStatus] = useState<string | null>(null)
-  const [currentJobInfo, setCurrentJobInfo] = useState<any | null>(null)
-  const [technologyInterviewed, setTechnologyInterviewed] = useState<Technology[]>([])
-  const [isTechAdded, setIsTechAdded] = useState(false)
-  const [showTechSuggestions, setShowTechSuggestions] = useState(false)
-  const [techInputValue, setTechInputValue] = useState("")
-  const [selectedRoundId, setSelectedRoundId] = useState(0)
-  const [allTech, setAllTech] = useState<any | null>(null)
-  const [existing, setExisting] = useState<any | null>()
-  const [activeTab, setActiveTab] = useState("job")
+  const router = useRouter();
+  const { contactInterViewId } = router.query;
+  const candidateId = Number(router.query.id);
+  const [addRoundEnabled, setAddRoundEnabled] = useState(false);
+  const [updateRoundEnabled, setUpdateRoundEnabled] = useState(false);
+  const [currentCandidate, setCurrentCandidate] = useState<Candidate | null>(
+    null
+  );
+  const [currentJobData, setCurrentJobData] = useState<Interview[] | null>(
+    null
+  );
+  const [allRounds, setAllRounds] = useState<Round[] | null>(null);
+  const [selectedRound, setSelectedRound] = useState<Round | null>(null);
+  const [masterTech, setMasterTech] = useState<any[] | null>(null);
+  const [job, setJob] = useState<any | null>(null);
+  const [overAllStatus, setOverAllStatus] = useState<string | null>(null);
+  const [currentJobInfo, setCurrentJobInfo] = useState<any | null>(null);
+  const [technologyInterviewed, setTechnologyInterviewed] = useState<
+    Technology[]
+  >([]);
+  const [isTechAdded, setIsTechAdded] = useState(false);
+  const [showTechSuggestions, setShowTechSuggestions] = useState(false);
+  const [techInputValue, setTechInputValue] = useState("");
+  const [selectedRoundId, setSelectedRoundId] = useState(0);
+  const [allTech, setAllTech] = useState<any | null>(null);
+  const [existing, setExisting] = useState<any | null>();
+  const [activeTab, setActiveTab] = useState("rounds");
   // Add state for selected round technologies
-  const [selectedRoundTechnologies, setSelectedRoundTechnologies] = useState<any[]>([])
+  const [selectedRoundTechnologies, setSelectedRoundTechnologies] = useState<
+    any[]
+  >([]);
 
   const onTabChange = (tab: string) => {
-    setActiveTab(tab)
-  }
+    setActiveTab(tab);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Passed":
-        return "bg-green-500 text-white"
+        return "bg-green-500 text-white";
       case "On-Hold":
-        return "bg-amber-300 text-amber-800 border-amber-200"
+        return "bg-amber-300 text-amber-800 border-amber-200";
       case "Scheduled":
-        return "bg-yellow-400 text-white border-blue-400"
+        return "bg-yellow-400 text-white border-blue-400";
       case "Rejected":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getRatingStars = (rating: number) => {
     return [...Array(5)].map((_, i) => (
@@ -87,22 +102,26 @@ export default function CandidateInterviews() {
           i < rating ? "text-amber-400 fill-current" : "text-gray-300"
         }`}
       />
-    ))
-  }
+    ));
+  };
 
   const filteredTechSuggestions =
-    masterTech?.filter((tech) => tech.technology.toLowerCase().includes(techInputValue.toLowerCase())) || []
+    masterTech?.filter((tech) =>
+      tech.technology.toLowerCase().includes(techInputValue.toLowerCase())
+    ) || [];
 
   // Updated compact technology display function
   const getRoundTechs = (roundId: number) => {
-    const filteredTechs = allTech?.filter((tech: any) => tech.interviewRound.roundId === roundId)
+    const filteredTechs = allTech?.filter(
+      (tech: any) => tech.interviewRound.roundId === roundId
+    );
 
     if (!filteredTechs || filteredTechs.length === 0) {
       return (
         <div className="flex items-center justify-center py-4 text-gray-500">
           <span className="text-sm">No technologies added yet</span>
         </div>
-      )
+      );
     }
 
     return (
@@ -112,7 +131,9 @@ export default function CandidateInterviews() {
             key={index}
             className="flex items-center gap-2 px-4 py-1.5 bg-white border-2 border-cyan-500 rounded-md hover:bg-cyan-100 transition-colors"
           >
-            <span className="text-sm font-medium text-gray-900">{tech.technology.technology}</span>
+            <span className="text-sm font-medium text-gray-900">
+              {tech.technology.technology}
+            </span>
             {tech.techRating && (
               <span className="flex items-center gap-1 px-2 py-1 bg-cyan-500 text-white rounded-full text-xs font-medium">
                 ★ {tech.techRating}
@@ -121,15 +142,15 @@ export default function CandidateInterviews() {
           </div>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   const handleAddTechnology = (tech: any) => {
     if (technologyInterviewed.some((t) => t.technology === tech.technology)) {
-      toast.error("Technology already added", { position: "top-center" })
-      return
+      toast.error("Technology already added", { position: "top-center" });
+      return;
     }
-    setTechnologyInterviewed([...technologyInterviewed, tech.technology])
+    setTechnologyInterviewed([...technologyInterviewed, tech.technology]);
 
     createInterviewTech({
       technology: {
@@ -139,82 +160,100 @@ export default function CandidateInterviews() {
         roundId: selectedRoundId,
       },
     }).then((data) => {
-      console.log(data)
-      if (data.message) toast.error("Technology already added", { position: "top-center" })
+      console.log(data);
+      if (data.message)
+        toast.error("Technology already added", { position: "top-center" });
       else if (data.status === 201) {
-        toast.success(`Technology added successfully ${data.data.technology.technology}`, { position: "top-center" })
+        toast.success(
+          `Technology added successfully ${data.data.technology.technology}`,
+          { position: "top-center" }
+        );
         // Refresh the technologies after adding
         fetchAllInterviewTechs().then((data) => {
-          setAllTech(data)
-        })
+          setAllTech(data);
+        });
       }
-    })
-    setTechInputValue("")
-    setShowTechSuggestions(false)
-  }
-
+    });
+    setTechInputValue("");
+    setShowTechSuggestions(false);
+  };
 
   const renderSanitizedHtml = (htmlString: string) => {
-    return { __html: DOMPurify.sanitize(htmlString) }
-  }
+    return { __html: DOMPurify.sanitize(htmlString) };
+  };
 
   useEffect(() => {
     if (router.isReady) {
-      const Id = Number(router.query.interviewid)
-      const candidateId = Number(router.query.id)
-      const interViewId = Number(contactInterViewId)
+      const Id = Number(router.query.interviewid);
+      const candidateId = Number(router.query.id);
+      const interViewId = Number(contactInterViewId);
 
       fetchCandidate(candidateId)
         .then((data) => {
-          setCurrentCandidate(data)
+          setCurrentCandidate(data);
         })
         .catch((err) => {
-          console.log(err)
-        })
+          console.log(err);
+        });
 
       fetchInterviewRoundsByContactAndJob(candidateId, Id).then((data) => {
-        setAllRounds(data)
-      })
+        setAllRounds(data);
+      });
 
       fetchInterviewsByContact(candidateId).then((data) => {
-        setCurrentJobData(data)
-      })
+        setCurrentJobData(data);
+      });
 
       fetchContactInterview(interViewId).then((data) => {
-        setOverAllStatus(data.interviewStatus)
-        setCurrentJobInfo(data)
-        console.log(data)
-      })
+        setOverAllStatus(data.interviewStatus);
+        setCurrentJobInfo(data);
+      });
 
       fetchAllTechnologies().then((data) => {
-        setMasterTech(data)
-      })
+        setMasterTech(data);
+      });
 
       fetchAllInterviewTechs().then((data) => {
-        setAllTech(data)
-      })
+        setAllTech(data);
+      });
     }
-  }, [candidateId, contactInterViewId, updateRoundEnabled, addRoundEnabled, router.isReady, isTechAdded])
+  }, [
+    candidateId,
+    contactInterViewId,
+    updateRoundEnabled,
+    addRoundEnabled,
+    router.isReady,
+    isTechAdded,
+  ]);
 
   const getExistingTech = (roundId: number) => {
-    const filteredTechs = allTech?.filter((tech: any) => tech.interviewRound.roundId === roundId)
-    return filteredTechs || []
-  }
+    const filteredTechs = allTech?.filter(
+      (tech: any) => tech.interviewRound.roundId === roundId
+    );
+    return filteredTechs || [];
+  };
 
   // Updated handleUpdateRound function
   const handleUpdateRound = (round: Round) => {
-    console.log(round)
-    setSelectedRound(round)
+    console.log(round);
+    setSelectedRound(round);
     // Get existing technologies for this round
-    const existingTechs = getExistingTech(round.roundId || 1)
-    setSelectedRoundTechnologies(existingTechs)
-    setUpdateRoundEnabled(true)
-  }
+    const existingTechs = getExistingTech(round.roundId || 1);
+    setSelectedRoundTechnologies(existingTechs);
+    setUpdateRoundEnabled(true);
+  };
 
   return (
     <MainLayout>
-      <>
-        <div className="flex items-start justify-between bg-white p-6 border-b border-gray-200">
+      <div className="bg-white">
+        <div
+          className="flex items-center gap-2 px-8 pt-4 text-xl text-cyan-500 cursor-pointer hover:text-cyan-600"
+          onClick={() => router.back()}
+        >
+          <ArrowBigLeftDashIcon className="w-6 h-6" />
+          <button className="border-b">Back to Previous Page</button>
+        </div>
+        <div className="flex items-start justify-between  p-6 border-b border-gray-200">
           <div className="flex items-start space-x-4">
             {/* Profile Image */}
             <div className="flex justify-center mr-2">
@@ -250,7 +289,8 @@ export default function CandidateInterviews() {
                 <div className="flex items-center space-x-2">
                   <GraduationCap className="w-4 h-4 text-cyan-600 font-semibold" />
                   <span>
-                    {currentCandidate?.highestEducation}({currentCandidate?.designation})
+                    {currentCandidate?.highestEducation}(
+                    {currentCandidate?.designation})
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -259,11 +299,15 @@ export default function CandidateInterviews() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-4 h-4 text-cyan-600 font-semibold" />
-                  <span>{currentCandidate?.currentLocation.locationDetails}</span>
+                  <span>
+                    {currentCandidate?.currentLocation.locationDetails}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Link2 className="w-4 h-4 text-cyan-600 font-semibold" />
-                  <span className="text-blue-600">{currentCandidate?.linkedin ?? "NA"}</span>
+                  <span className="text-blue-600">
+                    {currentCandidate?.linkedin ?? "NA"}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-cyan-600 font-semibold" />
@@ -271,7 +315,9 @@ export default function CandidateInterviews() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Github className="w-4 h-4 text-cyan-600 font-semibold" />
-                  <span className="text-blue-600">{currentCandidate?.github ?? "NA"}</span>
+                  <span className="text-blue-600">
+                    {currentCandidate?.github ?? "NA"}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-cyan-600 font-semibold" />
@@ -279,7 +325,9 @@ export default function CandidateInterviews() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Globe className="w-4 h-4 text-cyan-600 font-semibold" />
-                  <span className="text-blue-600">{currentCandidate?.blog ?? "NA"}</span>
+                  <span className="text-blue-600">
+                    {currentCandidate?.blog ?? "NA"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -310,7 +358,7 @@ export default function CandidateInterviews() {
             </button>
           </nav>
         </div>
-      </>
+      </div>
 
       {activeTab === "rounds" && (
         <div className="mt-4">
@@ -328,17 +376,22 @@ export default function CandidateInterviews() {
             <div className="grid grid-cols-2 gap-6">
               {allRounds && allRounds.length > 0 ? (
                 allRounds?.map((round) => (
-                  <div className="bg-white border border-gray-300 rounded-md" key={round.roundId}>
+                  <div
+                    className="bg-white border border-gray-300 rounded-md"
+                    key={round.roundId}
+                  >
                     <div className="">
                       {/* Card Header */}
                       <div className="p-5">
                         <div className="flex items-start flex-wrap justify-between mb-4">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
-                              <span className="text-xl font-semibold">Round {round.roundNumber}</span>
+                              <span className="text-xl font-semibold">
+                                Round {round.roundNumber}
+                              </span>
                               <span
                                 className={`px-3 py-1 rounded-full text-xs ${getStatusColor(
-                                  round.interviewStatus,
+                                  round.interviewStatus
                                 )} font-medium shadow-sm`}
                               >
                                 {round.interviewStatus}
@@ -371,7 +424,9 @@ export default function CandidateInterviews() {
                                 <div>
                                   <p className="text-sm">Date</p>
                                   <p className="font-semibold text-base">
-                                    {new Date(round.roundDate).toLocaleDateString()}
+                                    {new Date(
+                                      round.roundDate
+                                    ).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
@@ -381,7 +436,9 @@ export default function CandidateInterviews() {
                                 </div>
                                 <div>
                                   <p className="text-sm opacity-80">Time</p>
-                                  <p className="font-semibold text-base">{round.interviewTime}</p>
+                                  <p className="font-semibold text-base">
+                                    {round.interviewTime}
+                                  </p>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-4">
@@ -389,8 +446,12 @@ export default function CandidateInterviews() {
                                   <User className="w-6 h-6" />
                                 </div>
                                 <div>
-                                  <p className="text-sm opacity-80">Interviewer</p>
-                                  <p className="font-semibold text-base">{round.interviewerName}</p>
+                                  <p className="text-sm opacity-80">
+                                    Interviewer
+                                  </p>
+                                  <p className="font-semibold text-base">
+                                    {round.interviewerName}
+                                  </p>
                                 </div>
                               </div>
                             </div>
@@ -401,34 +462,50 @@ export default function CandidateInterviews() {
                         {round.techRating && round.techRating > 0 && (
                           <div className="border-b border-gray-200 pb-2 mb-6">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-slate-600">Technical Rating</span>
+                              <span className="text-sm font-medium text-slate-600">
+                                Technical Rating
+                              </span>
                               <div className="flex items-center space-x-2">
-                                <div className="flex space-x-1">{getRatingStars(round.techRating)}</div>
-                                <span className="font-semibold text-slate-800 ml-2">{Math.round(round.techRating)}/5</span>
+                                <div className="flex space-x-1">
+                                  {getRatingStars(round.techRating)}
+                                </div>
+                                <span className="font-semibold text-slate-800 ml-2">
+                                  {Math.round(round.techRating)}/5
+                                </span>
                               </div>
                             </div>
                           </div>
                         )}
 
-                        {round.softskillsRating && round.softskillsRating > 0 && (
-                          <div className="border-b border-gray-200 pb-2 mb-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-slate-600">Soft Skills Rating</span>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex space-x-1">{getRatingStars(round.softskillsRating)}</div>
-                                <span className="font-semibold text-slate-800 ml-2">{round.softskillsRating}/5</span>
+                        {round.softskillsRating &&
+                          round.softskillsRating > 0 && (
+                            <div className="border-b border-gray-200 pb-2 mb-4">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-slate-600">
+                                  Soft Skills Rating
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                  <div className="flex space-x-1">
+                                    {getRatingStars(round.softskillsRating)}
+                                  </div>
+                                  <span className="font-semibold text-slate-800 ml-2">
+                                    {round.softskillsRating}/5
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         {/* Technologies Section - Updated with compact design */}
                         <div className="mb-4">
                           <div className="border border-gray-300 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-semibold text-slate-700">Technologies Interviewed</h4>
+                              <h4 className="font-semibold text-slate-700">
+                                Technologies Interviewed
+                              </h4>
                               <span className="text-xs text-gray-500">
-                                {getExistingTech(round.roundId ?? 1).length} technologies
+                                {getExistingTech(round.roundId ?? 1).length}{" "}
+                                technologies
                               </span>
                             </div>
                             <div className="min-h-[60px] max-h-24 overflow-y-auto">
@@ -440,7 +517,9 @@ export default function CandidateInterviews() {
                         {/* Remarks */}
                         <div className="">
                           <div className="border border-gray-300 rounded-lg p-4">
-                            <h4 className="font-semibold text-slate-700 mb-2">Remarks</h4>
+                            <h4 className="font-semibold text-slate-700 mb-2">
+                              Remarks
+                            </h4>
                             <div className="text-sm text-slate-600 max-h-16 overflow-y-auto">
                               {round.remarks || "No remarks provided"}
                             </div>
@@ -468,7 +547,7 @@ export default function CandidateInterviews() {
 
           {/* Render the Update Form Popup - Fixed with proper props */}
           {updateRoundEnabled && selectedRound && (
-            <Popup onClose={() => setUpdateRoundEnabled(false)}>
+            <Popup>
               <InterviewForm
                 masterTechnologies={masterTech || []}
                 initialValues={selectedRound}
@@ -479,15 +558,16 @@ export default function CandidateInterviews() {
             </Popup>
           )}
 
-    
           {/* Render the Add Round Popup */}
           {addRoundEnabled && currentJobData && (
-            <Popup onClose={() => setAddRoundEnabled(false)}>
+            <Popup>
               <AddRound
                 className="rounded-md bg-white"
                 interviewId={contactInterViewId}
                 onclose={() => setAddRoundEnabled(false)}
-                roundNumber={allRounds?.[allRounds?.length - 1]?.roundNumber ?? 0}
+                roundNumber={
+                  allRounds?.[allRounds?.length - 1]?.roundNumber ?? 0
+                }
                 masterTechnologies={masterTech}
               />
             </Popup>
@@ -502,52 +582,70 @@ export default function CandidateInterviews() {
             <div className="grid grid-cols-1 md:grid-cols-4">
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Client Name</div>
-                <div className="font-semibold">{currentJobInfo.clientJob.client.clientName}</div>
+                <div className="font-semibold">
+                  {currentJobInfo.clientJob.client.clientName}
+                </div>
               </div>
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Job Title</div>
-                <div className="font-semibold">{currentJobInfo.clientJob.jobTitle}</div>
+                <div className="font-semibold">
+                  {currentJobInfo.clientJob.jobTitle}
+                </div>
               </div>
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Job Locations</div>
                 <div className="font-semibold">
-                  {currentJobInfo.clientJob.jobLocations.length > 0
-                    ? currentJobInfo.clientJob.jobLocations
-                        .map((location: any) => location.state.locationDetails)
+                  {currentJobInfo.clientJob.locations.length > 0
+                    ? currentJobInfo.clientJob.locations
+                        .map((location: any) => location.locationDetails)
                         .join(" | ")
                     : "No Data"}
                 </div>
               </div>
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Salary</div>
-                <div className="font-semibold">{currentJobInfo.clientJob.salaryInCtc} LPA</div>
+                <div className="font-semibold">
+                  {currentJobInfo.clientJob.salaryInCtc} LPA
+                </div>
               </div>
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Experience Required</div>
-                <div className="font-semibold">{currentJobInfo.clientJob.experience} YRS</div>
+                <div className="font-semibold">
+                  {currentJobInfo.clientJob.experience} YRS
+                </div>
               </div>
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Job type</div>
-                <div className="font-semibold">{currentJobInfo.clientJob.preferredJobMode}</div>
+                <div className="font-semibold">
+                  {currentJobInfo.clientJob.preferredJobMode}
+                </div>
               </div>
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Hiring Type</div>
-                <div className="font-semibold">{currentJobInfo.clientJob.hiringType}</div>
+                <div className="font-semibold">
+                  {currentJobInfo.clientJob.hiringType}
+                </div>
               </div>
               <div className="p-4 border border-gray-300">
                 <div className="text-gray-600 mb-1">Placement Type</div>
-                <div className="font-semibold">{currentJobInfo.clientJob.jobPostType}</div>
+                <div className="font-semibold">
+                  {currentJobInfo.clientJob.jobPostType}
+                </div>
               </div>
             </div>
             {/* Job Description */}
             <div>
-              <h2 className="text-xl font-bold text-blue-600">Job Description</h2>
+              <h2 className="text-xl font-bold text-blue-600">
+                Job Description
+              </h2>
               <div className="space-y-2">
                 {currentJobInfo.clientJob.jobDescription && (
                   <div className="text-sm">
                     <div
                       className="prose max-w-none"
-                      dangerouslySetInnerHTML={renderSanitizedHtml(currentJobInfo.clientJob.jobDescription)}
+                      dangerouslySetInnerHTML={renderSanitizedHtml(
+                        currentJobInfo.clientJob.jobDescription
+                      )}
                     />
                   </div>
                 )}
@@ -557,5 +655,5 @@ export default function CandidateInterviews() {
         </div>
       )}
     </MainLayout>
-  )
+  );
 }

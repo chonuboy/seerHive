@@ -18,7 +18,7 @@ export default function Candidates() {
   const router = useRouter();
   const [query, setQuery] = useState<any>(null);
   const [jobId, setJobId] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start with true for initial load
+  const [isLoading, setIsLoading] = useState(true);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -26,13 +26,34 @@ export default function Candidates() {
   const [resetEntries, setResetEntries] = useState(12);
   const [isCandidateAdded, setIsCandidateAdded] = useState(false);
 
+  const fetchCandidatesData = async (page: number, entries: number) => {
+    setIsLoading(true);
+    try {
+      const data = await fetchCandidates(page, entries);
+      if (data) {
+        setAllCandidates(data.content || []);
+        setTotalPages(data.totalPages || 0);
+        setTotalElements(data.totalElements || 0);
+        setPageElements(data.content?.length || 0);
+      } else {
+        setAllCandidates([]);
+        setTotalPages(0);
+        setTotalElements(0);
+        setPageElements(0);
+      }
+    } catch (error) {
+      console.error("Error fetching candidates:", error);
+      setAllCandidates([]);
+      setTotalPages(0);
+      setTotalElements(0);
+      setPageElements(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const onUpdate = () => {
-    fetchCandidates(currentPage, resetEntries).then((data: any) => {
-      setAllCandidates(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
-      setPageElements(data.content.length);
-    });
+    fetchCandidatesData(currentPage, resetEntries);
   };
 
   useEffect(() => {
@@ -49,35 +70,9 @@ export default function Candidates() {
     }
 
     if (!isSearchMode && router.isReady) {
-      setIsLoading(true);
-      const fetchData = async () => {
-        try {
-          const data = await fetchCandidates(currentPage, resetEntries);
-          if (data) {
-            setAllCandidates(data.content || []);
-            setTotalPages(data.totalPages || 0);
-            setTotalElements(data.totalElements || 0);
-            setPageElements(data.content?.length || 0);
-          } else {
-            setAllCandidates([]);
-            setTotalPages(0);
-            setTotalElements(0);
-            setPageElements(0);
-          }
-        } catch (error) {
-          console.error("Error fetching candidates:", error);
-          setAllCandidates([]);
-          setTotalPages(0);
-          setTotalElements(0);
-          setPageElements(0);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchData();
+      fetchCandidatesData(currentPage, resetEntries);
     }
-  }, [currentPage, router.isReady, isSearchMode]);
+  }, [currentPage, router.isReady, isSearchMode, resetEntries]);
 
   const handleSearch = () => {
     if (!searchKeyword.trim()) {
@@ -91,19 +86,31 @@ export default function Candidates() {
     setIsSearchMode(true);
     setCurrentPage(0);
 
-    contactSearchByKeyword(searchKeyword, currentPage,resetEntries).then((data) => {
-      setIsLoading(false);
-      if (data.status === "NOT_FOUND") {
-        toast.error(`Candidate Not Found for this keyword: ${searchKeyword}`, {
-          position: "top-center",
-        });
-        setIsSearchMode(false);
-        setAllCandidates([]);
-      } else {
-        setAllCandidates(data.content);
-        setTotalElements(data.totalElements);
-        setResetEntries(data.content.length);
+    contactSearchByKeyword(searchKeyword, 0, resetEntries).then(
+      (data) => {
+        setIsLoading(false);
+        if (data.status === "NOT_FOUND") {
+          toast.error(
+            `Candidate Not Found for this keyword: ${searchKeyword}`,
+            {
+              position: "top-center",
+            }
+          );
+          setIsSearchMode(false);
+          fetchCandidatesData(0, resetEntries);
+        } else {
+          setAllCandidates(data.content);
+          setTotalPages(data.totalPages || 1);
+          setTotalElements(data.totalElements);
+          setPageElements(data.content.length);
+        }
       }
+    ).catch(error => {
+      setIsLoading(false);
+      console.error("Search error:", error);
+      toast.error("Search failed. Please try again.", {
+        position: "top-center",
+      });
     });
   };
 
@@ -112,18 +119,26 @@ export default function Candidates() {
 
     if (isSearchMode && searchKeyword.trim()) {
       setIsLoading(true);
-      contactSearchByKeyword(searchKeyword, newPage-1 ,resetEntries).then((data) => {
-        setIsLoading(false);
-        if (data.status === "NOT_FOUND") {
-          toast.error("No more candidates found", {
-            position: "top-center",
-          });
-        } else {
-          setAllCandidates(data.content);
-          setTotalElements(data.totalElements);
-          setResetEntries(data.content.length);
+      contactSearchByKeyword(searchKeyword, newPage, resetEntries).then(
+        (data) => {
+          setIsLoading(false);
+          if (data.status === "NOT_FOUND") {
+            toast.error("No more candidates found", {
+              position: "top-center",
+            });
+          } else {
+            setAllCandidates(data.content);
+            setTotalPages(data.totalPages || 1);
+            setTotalElements(data.totalElements);
+            setPageElements(data.content.length);
+          }
         }
+      ).catch(error => {
+        setIsLoading(false);
+        console.error("Page change error:", error);
       });
+    } else {
+      fetchCandidatesData(newPage, resetEntries);
     }
   };
 
@@ -131,14 +146,7 @@ export default function Candidates() {
     setSearchKeyword("");
     setIsSearchMode(false);
     setCurrentPage(0);
-    setIsLoading(true);
-    fetchCandidates(0, 12).then((data: any) => {
-      setAllCandidates(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
-      setResetEntries(12);
-      setIsLoading(false);
-    });
+    fetchCandidatesData(0, resetEntries);
   };
 
   const handleEntriesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,41 +159,39 @@ export default function Candidates() {
   };
 
   const handleEntriesKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  if (e.key === 'Enter') {
-    if(resetEntries > totalElements) {
-      toast.error("Cannot set entries more than total elements", {
-        position: "top-center",
-      });
-      return
-    }
-    
-    if (!isSearchMode) {
-      setIsLoading(true);
-      fetchCandidates(0, resetEntries).then((data: any) => {
-        setAllCandidates(data.content);
-        setTotalPages(data.totalPages);
-        setTotalElements(data.totalElements);
-        setResetEntries(data.content.length);
-        setIsLoading(false);
-      });
-    }else{
-      setIsLoading(true);
-      contactSearchByKeyword(searchKeyword, currentPage , 12).then((data) => {
-        setIsLoading(false);
-        if (data.status === "NOT_FOUND") {
-          toast.error("No more candidates found", {
-            position: "top-center",
-          });
-        } else {
-          setAllCandidates(data.content);
-          setTotalElements(data.totalElements);
-          setPageElements(data.content.length);
-        }
-      });
-    }
-  }
-};
+    if (e.key === "Enter") {
+      if (resetEntries > totalElements) {
+        toast.error("Cannot set entries more than total elements", {
+          position: "top-center",
+        });
+        return;
+      }
 
+      if (!isSearchMode) {
+        fetchCandidatesData(0, resetEntries);
+      } else {
+        setIsLoading(true);
+        contactSearchByKeyword(searchKeyword, 0, resetEntries).then((data) => {
+          setIsLoading(false);
+          if (data.status === "NOT_FOUND") {
+            toast.error("No more candidates found", {
+              position: "top-center",
+            });
+          } else {
+            setAllCandidates(data.content);
+            setTotalPages(data.totalPages || 1);
+            setTotalElements(data.totalElements);
+            setPageElements(data.content.length);
+          }
+        }).catch(error => {
+          setIsLoading(false);
+          console.error("Entries change error:", error);
+        });
+      }
+    }
+  };
+
+  // Rest of your component remains the same...
   if (isLoading) {
     return (
       <MainLayout>

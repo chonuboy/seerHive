@@ -5,15 +5,27 @@ import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { Popup } from "@/components/Elements/cards/popup";
 import JobInfoUpdateForm from "@/components/Forms/jobs/updateJobInfo";
-import { BookOpen, Briefcase, ChevronDown, User } from "lucide-react";
+import { ArrowBigLeftDashIcon, BookOpen, Briefcase, ChevronDown, Timer, User, X } from "lucide-react";
 import { domainDetails, Interviews, Technology } from "@/lib/models/candidate";
-import { fetchAllTechnologies } from "@/api/master/masterTech";
-import { fetchAllDomains } from "@/api/master/domain";
-import { createJobTech, fetchAllJobTechs } from "@/api/client/clientJobTech";
+import {
+  createTechnology,
+  fetchAllTechnologies,
+} from "@/api/master/masterTech";
+import { createDomain, fetchAllDomains } from "@/api/master/domain";
+import {
+  createJobTech,
+  deleteJobTech,
+  fetchAllJobTechs,
+} from "@/api/client/clientJobTech";
 import { toast } from "react-toastify";
 import { fetchContactsByJob } from "@/api/candidates/interviews";
 import Link from "next/link";
 import PdfViewer from "@/components/Elements/utils/pdfViewer";
+import {
+  createClientJobDomain,
+  deleteClientJobDomain,
+  fetchAllClientJobDomains,
+} from "@/api/client/jobDomain";
 
 export default function Job() {
   const router = useRouter();
@@ -32,64 +44,235 @@ export default function Job() {
   );
   const [isDomainDropdownOpen, setIsDomainDropdownOpen] = useState(false);
 
-  const [jobSkills, setJobSkills] = useState<Technology[] | null>(null);
-  const [jobDomains, setJobDomains] = useState<domainDetails[] | null>(null);
+  const [jobSkills, setJobSkills] = useState<any[] | null>(null);
+  const [jobDomains, setJobDomains] = useState<any[] | null>(null);
   const [shortlisted, setShortlisted] = useState<Interviews[] | null>(null);
 
-  const postSkillDomain = () => {
-    if (!selectedDomain || !selectedSkill) {
-      toast.error("Please select a skill and domain", {
-        position: "top-right",
-      });
-      return;
-    }
-    if (jobSkills?.some((skill) => skill.techId === selectedSkill?.techId)) {
-      toast.error("Skill already Added", {
-        position: "top-right",
-      });
-      return;
-    }
-    if (
-      jobDomains?.some((domain) => domain.domainId === selectedDomain?.domainId)
-    ) {
-      toast.error("Domain already Added", {
-        position: "top-right",
-      });
-      return;
-    }
-    createJobTech({
-      job: {
-        jobId: jobId,
-      },
-      technology: {
-        techId: selectedSkill?.techId,
-      },
-      domain: {
-        domainId: selectedDomain?.domainId,
-      },
-    })
-      .then((data) => {
-        if (data.status === 400) {
-          toast.error("Skill already Added", {
-            position: "top-right",
-          });
-          return;
-        }
-        console.log(data);
+  const postSkill = async () => {
+    try {
+      if (!selectedSkill || !selectedSkill.technology) {
+        return;
+      }
 
-        if (data.status === 201) {
-          toast.success("Skill and Domain added successfully", {
-            position: "top-right",
-          });
-        }
+      // Check if skill already exists in job's skills
+      if (
+        jobSkills?.some(
+          (skill) => skill.technology.techId === selectedSkill.techId
+        )
+      ) {
+        toast.error("Skill already added to this job", {
+          position: "top-right",
+        });
+        return;
+      }
 
-        setSelectedDomain(null);
+      // Check if skill exists in master tech table
+      const skillExists = allTech?.some(
+        (tech) => tech.techId === selectedSkill.techId
+      );
+
+      let skillToAdd;
+
+      if (!skillExists) {
+        // If skill doesn't exist in master, create it
+        const newSkill = {
+          technology: selectedSkill.technology,
+        };
+        const createdSkill = await createTechnology(newSkill);
+        skillToAdd = createdSkill;
+        // Update allTech state
+        setAllTech((prev) => (prev ? [...prev, createdSkill] : [createdSkill]));
+      } else {
+        skillToAdd = selectedSkill;
+      }
+
+      // Associate skill with job
+      const result = await createJobTech({
+        job: { jobId },
+        technology: { techId: skillToAdd.techId },
+      });
+
+      if (result.status === 201) {
+        toast.success("Skill added successfully", {
+          position: "top-right",
+        });
+        // Update job skills state
+        setJobSkills((prev) => (prev ? [...prev, result.data] : [result.data]));
         setSelectedSkill(null);
-        setIsSkillAdded(false);
-      })
-      .catch((err) => {});
+        setIsSkillDropdownOpen(false);
+      }
+    } catch (error) {
+      console.error("Error adding skill:", error);
+      toast.error("Failed to add skill. Please try again.", {
+        position: "top-right",
+      });
+    }
   };
 
+  const postDomain = async () => {
+    try {
+      if (!selectedDomain) {
+        return;
+      }
+
+      // Check if domain already exists in job's domains
+      if (
+        jobDomains?.some(
+          (domain) =>
+            domain.domainDetails?.toLowerCase() ===
+            selectedDomain.domainDetails.toLowerCase()
+        )
+      ) {
+        toast.error("Domain already added", {
+          position: "top-right",
+        });
+        return;
+      }
+
+      // Check if domain exists in master domains
+      const domainExists = allDomain?.some(
+        (domain) =>
+          domain.domainDetails.toLowerCase() ===
+          selectedDomain.domainDetails.toLowerCase()
+      );
+
+      let domainToAdd;
+
+      if (domainExists) {
+        // If domain exists, find it in master domains
+        domainToAdd = allDomain?.find(
+          (domain) =>
+            domain.domainDetails.toLowerCase() ===
+            selectedDomain.domainDetails.toLowerCase()
+        );
+      } else {
+        // If domain doesn't exist, create it
+        const newDomain = {
+          domainDetails: selectedDomain.domainDetails,
+        };
+
+        // Create the new domain (you'll need to implement createDomain API)
+        const createdDomain = await createDomain(newDomain);
+
+        // Update allDomain state with the new domain
+        setAllDomain((prev) =>
+          prev ? [...prev, createdDomain] : [createdDomain]
+        );
+
+        domainToAdd = createdDomain;
+      }
+
+      // Associate the domain with the job
+      if (domainToAdd) {
+        const result = await createClientJobDomain({
+          clientJob: {
+            jobId: jobId,
+          },
+          domain: {
+            domainId: domainToAdd.domainId,
+          },
+        });
+
+        if (result.status === 200) {
+          toast.success("Domain added successfully", {
+            position: "top-right",
+          });
+
+          // Update job domains state with the domain object
+          setJobDomains((prev) =>
+            prev ? [...prev, result.data] : [result.data]
+          );
+          setSelectedDomain(null);
+          setIsDomainDropdownOpen(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error adding domain:", error);
+      toast.error("Failed to add domain. Please try again.", {
+        position: "top-right",
+      });
+    }
+  };
+
+  const removeSkill = async (skillToRemove: any) => {
+    try {
+      await deleteJobTech(skillToRemove.jobCodeTechId);
+
+      // Update local state to remove the skill
+      setJobSkills(
+        jobSkills &&
+          jobSkills.filter(
+            (skill) => skill.jobCodeTechId !== skillToRemove.jobCodeTechId
+          )
+      );
+
+      toast.success("Skill removed successfully", {
+        position: "top-right",
+      });
+    } catch (error) {
+      console.error("Error removing skill:", error);
+      toast.error("Failed to remove skill. Please try again.", {
+        position: "top-right",
+      });
+    }
+  };
+
+  const removeDomain = async (domainToRemove: any) => {
+    try {
+      await deleteClientJobDomain(
+        domainToRemove.clientJobDomainId || domainToRemove.domainId
+      );
+
+      // Update local state to remove the domain
+      setJobDomains(
+        jobDomains &&
+          jobDomains.filter(
+            (domain) =>
+              domain.clientJobDomainId !== domainToRemove.clientJobDomainId
+          )
+      );
+
+      toast.success("Domain removed successfully", {
+        position: "top-right",
+      });
+    } catch (error) {
+      console.error("Error removing domain:", error);
+      toast.error("Failed to remove domain. Please try again.", {
+        position: "top-right",
+      });
+    }
+  };
+
+  const handleSkillSelect = (skill: any) => {
+    setSelectedSkill(skill);
+    setIsSkillDropdownOpen(false);
+    // Auto-submit after selection
+    setTimeout(() => {
+      postSkill();
+    }, 100);
+  };
+
+  const handleSkillInputChange = (value: any) => {
+    setSelectedSkill({ technology: value });
+    setIsSkillDropdownOpen(true);
+  };
+
+  const handleDomainInputChange = (value: any) => {
+    setSelectedDomain({ domainDetails: value });
+    setIsDomainDropdownOpen(true);
+  };
+
+  const filteredSkills = allTech?.filter((tech) =>
+    tech.technology
+      .toLowerCase()
+      .includes(selectedSkill?.technology?.toLowerCase() || "")
+  );
+
+  const filteredDomains = allDomain?.filter((domain) =>
+    domain.domainDetails
+      .toLowerCase()
+      .includes(selectedDomain?.domainDetails?.toLowerCase() || "")
+  );
   const renderSanitizedHtml = (htmlString: string) => {
     return { __html: DOMPurify.sanitize(htmlString) };
   };
@@ -99,7 +282,6 @@ export default function Job() {
       fetchJob(jobId)
         .then((data) => {
           setCurrentJob(data);
-          console.log(data);
         })
         .catch((err) => {
           console.log(err);
@@ -114,12 +296,14 @@ export default function Job() {
         setJobSkills(
           data
             .filter((item: any) => item.job.jobId === jobId)
-            .map((item: any) => item.technology)
+            .map((item: any) => item)
         );
+      });
+      fetchAllClientJobDomains().then((data) => {
         setJobDomains(
           data
-            .filter((item: any) => item.job.jobId === jobId)
-            .map((item: any) => item.domain)
+            .filter((item: any) => item.clientJob.jobId === jobId)
+            .map((item: any) => item)
         );
       });
       fetchContactsByJob(jobId).then((data) => {
@@ -134,17 +318,15 @@ export default function Job() {
     setActiveTab(tab);
   };
 
-  const getStatusColor = (status:string)=>{
-    if(status === "Active"){
+  const getStatusColor = (status: string) => {
+    if (status === "Active") {
       return "text-green-500 px-3 py-1 font-medium";
-    }
-    else if(status === "Closed"){
+    } else if (status === "Closed") {
       return "text-red-500 px-3 py-1 font-medium";
-    }
-    else{
+    } else {
       return "text-yellow-500 px-3 py-1 font-medium";
     }
-  }
+  };
 
   if (!currentJob) {
     return (
@@ -161,15 +343,28 @@ export default function Job() {
 
   return (
     <MainLayout>
-      <div className="">
-        <div className="p-6 bg-white">
+      <div className="bg-white">
+        <div
+          className="flex items-center gap-2 px-5 pt-4 text-xl text-cyan-500 cursor-pointer hover:text-cyan-600"
+          onClick={() => router.back()}
+        >
+          <ArrowBigLeftDashIcon className="w-6 h-6" />
+          <button className="border-b">Back to Previous Page</button>
+        </div>
+        <div className="p-6">
           {/* Header Section */}
           <div className="flex justify-between items-start mb-14">
             <div className="flex-1">
               <div className="flex items-center mb-6">
-                <div className={`w-6 h-6 rounded-full bg-${currentJob.isJobActive==="Active" ? "green-500" : currentJob.isJobActive==="OnHold" ? "yellow-400" : "red-500"}`}>
-
-                </div>
+                <div
+                  className={`w-6 h-6 rounded-full bg-${
+                    currentJob.isJobActive === "Active"
+                      ? "green-500"
+                      : currentJob.isJobActive === "OnHold"
+                      ? "yellow-400"
+                      : "red-500"
+                  }`}
+                ></div>
                 <span className={`${getStatusColor(currentJob.isJobActive)}`}>
                   {currentJob.isJobActive}
                 </span>
@@ -280,11 +475,9 @@ export default function Job() {
                       Job Locations
                     </div>
                     <div className="font-semibold">
-                      {currentJob.jobLocations.length > 0
-                        ? currentJob.jobLocations
-                            .map(
-                              (location: any) => location.state.locationDetails
-                            )
+                      {currentJob.locations.length > 0
+                        ? currentJob.locations
+                            .map((location: any) => location.locationDetails)
                             .join(" | ")
                         : "No Data"}
                     </div>
@@ -299,8 +492,11 @@ export default function Job() {
                     <div className="text-gray-600 text-sm mb-1">
                       Experience Required
                     </div>
-                    <div className="font-semibold">
-                      {currentJob.experience ?? "NA"} YRS
+                    <div className="flex items-center font-semibold">
+                      <span>
+                        {currentJob.minimumExperience} Yrs -{" "}
+                        {currentJob.maximumExperience} Yrs
+                      </span>
                     </div>
                   </div>
                   <div className="p-4 border border-gray-300">
@@ -347,7 +543,7 @@ export default function Job() {
                     {currentJob.jobDescription && (
                       <div className="mt-8 text-sm">
                         <div
-                          className="prose max-w-none" // Use 'prose' class for basic styling of HTML content
+                          className="prose max-w-none list-disc list-inside" // Use 'prose' class for basic styling of HTML content
                           dangerouslySetInnerHTML={renderSanitizedHtml(
                             currentJob.jobDescription
                           )}
@@ -405,138 +601,220 @@ export default function Job() {
 
                             <div className="space-y-8">
                               {/* Skills Section */}
-                              <div className="grid grid-cols-1 gap-6">
-                                {/* Skills Dropdown */}
-                                <div className="space-y-2">
-                                  <label className="block text-md font-semibold text-gray-700">
-                                    Skills{" "}
-                                    <span className="text-red-500">*</span>
-                                  </label>
-                                  <div className="relative">
-                                    <div className="flex items-center gap-2 px-4 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors">
-                                      <BookOpen className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                                      <input
-                                        type="text"
-                                        value={selectedSkill?.technology}
-                                        onChange={(e) => {
-                                          setIsSkillDropdownOpen(true);
-                                        }}
-                                        onFocus={() =>
-                                          setIsSkillDropdownOpen(true)
-                                        }
-                                        placeholder="Type or select a Skill..."
-                                        className="w-full outline-none text-gray-900"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setIsSkillDropdownOpen(
-                                            !isSkillDropdownOpen
-                                          )
-                                        }
-                                        className="text-gray-400 focus:outline-none"
-                                      >
-                                        <ChevronDown className="w-5 h-5" />
-                                      </button>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-4 pb-4 mt-6">
-                                      {jobSkills &&
-                                        jobSkills.map((skill, index) => (
-                                          <div
-                                            key={index}
-                                            className="flex items-center gap-2 px-4 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
-                                          >
-                                            <span>{skill.technology}</span>
-                                          </div>
-                                        ))}
-                                    </div>
-
-                                    {isSkillDropdownOpen && (
-                                      <div className="absolute top-12 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-                                        {/* Filter options based on input */}
-                                        {allTech &&
-                                          allTech.map((skill, index) => (
-                                            <button
-                                              key={index}
-                                              type="button"
-                                              onClick={() => {
-                                                setSelectedSkill(skill);
-                                                setIsSkillDropdownOpen(false);
-                                              }}
-                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
-                                            >
-                                              {skill.technology}
-                                            </button>
-                                          ))}
+                              <div className="max-w-4xl mx-auto bg-white">
+                                <div className="grid grid-cols-1 gap-6">
+                                  {/* Skills Dropdown */}
+                                  <div className="space-y-2">
+                                    <label className="block text-lg font-semibold text-gray-700">
+                                      Skills{" "}
+                                      <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                      <div className="flex items-center gap-2 px-4 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors">
+                                        <BookOpen className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                        <input
+                                          type="text"
+                                          value={
+                                            selectedSkill?.technology || ""
+                                          }
+                                          onChange={(e) =>
+                                            handleSkillInputChange(
+                                              e.target.value
+                                            )
+                                          }
+                                          onFocus={() =>
+                                            setIsSkillDropdownOpen(true)
+                                          }
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                              e.preventDefault();
+                                              postSkill();
+                                            }
+                                          }}
+                                          placeholder="Type or select a Skill..."
+                                          className="w-full outline-none text-gray-900"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setIsSkillDropdownOpen(
+                                              !isSkillDropdownOpen
+                                            )
+                                          }
+                                          className="text-gray-400 focus:outline-none"
+                                        >
+                                          <ChevronDown className="w-5 h-5" />
+                                        </button>
                                       </div>
-                                    )}
+
+                                      {/* Skills Dropdown Menu */}
+                                      {isSkillDropdownOpen && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                                          {filteredSkills &&
+                                          filteredSkills.length > 0 ? (
+                                            filteredSkills.map((skill) => (
+                                              <button
+                                                key={skill.techId}
+                                                type="button"
+                                                onClick={() =>
+                                                  handleSkillSelect(skill)
+                                                }
+                                                className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                              >
+                                                {skill.technology}
+                                              </button>
+                                            ))
+                                          ) : selectedSkill?.technology ? (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleSkillSelect(selectedSkill)
+                                              }
+                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none font-medium"
+                                            >
+                                              Add "{selectedSkill.technology}"
+                                            </button>
+                                          ) : (
+                                            <div className="px-4 py-2 text-gray-500">
+                                              No skills found
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Selected Skills */}
+                                    <div className="flex flex-wrap gap-4 mt-8">
+                                      {jobSkills?.map((skill, index) => (
+                                        <div
+                                          key={index}
+                                          className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
+                                        >
+                                          <span>
+                                            {skill.technology.technology}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            className="absolute -right-2 -top-2"
+                                            onClick={() => removeSkill(skill)}
+                                          >
+                                            <X className="w-5 h-5 text-gray-500 bg-white rounded-full border-2 border-gray-500" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <label className="block text-md font-semibold text-gray-700">
-                                    Domains{" "}
-                                    <span className="text-red-500">*</span>
-                                  </label>
-                                  <div className="relative">
-                                    <div className="flex items-center gap-2 px-4 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors">
-                                      <BookOpen className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                                      <input
-                                        type="text"
-                                        value={selectedDomain?.domainDetails}
-                                        onChange={(e) => {
-                                          setIsDomainDropdownOpen(true);
-                                        }}
-                                        onFocus={() =>
-                                          setIsDomainDropdownOpen(true)
-                                        }
-                                        placeholder="Type or select a Domain..."
-                                        className="w-full outline-none text-gray-900"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setIsDomainDropdownOpen(
-                                            !isDomainDropdownOpen
-                                          )
-                                        }
-                                        className="text-gray-400 focus:outline-none"
-                                      >
-                                        <ChevronDown className="w-5 h-5" />
-                                      </button>
-                                    </div>
 
-                                    <div className="flex flex-wrap gap-4 pb-4 mt-6">
-                                      {jobDomains &&
-                                        jobDomains.map((domain, index) => (
-                                          <div
-                                            key={index}
-                                            className="flex items-center gap-2 px-4 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
-                                          >
-                                            <span>{domain.domainDetails}</span>
-                                          </div>
-                                        ))}
-                                    </div>
+                                  {/* Domains Dropdown */}
+                                  <div className="space-y-2">
+                                    <label className="block text-lg font-semibold text-gray-700">
+                                      Domains{" "}
+                                      <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                      <div className="flex items-center gap-2 px-4 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors">
+                                        <BookOpen className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                        <input
+                                          type="text"
+                                          value={
+                                            selectedDomain?.domainDetails || ""
+                                          }
+                                          onChange={(e) =>
+                                            handleDomainInputChange(
+                                              e.target.value
+                                            )
+                                          }
+                                          onFocus={() =>
+                                            setIsDomainDropdownOpen(true)
+                                          }
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                              e.preventDefault();
+                                              postDomain();
+                                            }
+                                          }}
+                                          placeholder="Type or select a Domain..."
+                                          className="w-full outline-none text-gray-900"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setIsDomainDropdownOpen(
+                                              !isDomainDropdownOpen
+                                            )
+                                          }
+                                          className="text-gray-400 focus:outline-none"
+                                        >
+                                          <ChevronDown className="w-5 h-5" />
+                                        </button>
+                                      </div>
 
-                                    {isDomainDropdownOpen && (
-                                      <div className="absolute top-12 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-                                        {/* Filter options based on input */}
-                                        {allDomain &&
-                                          allDomain.map((domain, index) => (
+                                      {/* Domains Dropdown Menu */}
+                                      {isDomainDropdownOpen && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                                          {filteredDomains &&
+                                          filteredDomains.length > 0 ? (
+                                            filteredDomains.map((domain) => (
+                                              <button
+                                                key={domain.domainId}
+                                                type="button"
+                                                onClick={() => {
+                                                  setSelectedDomain(domain);
+                                                  setIsDomainDropdownOpen(
+                                                    false
+                                                  );
+                                                  setTimeout(() => {
+                                                    postDomain();
+                                                  }, 100);
+                                                }}
+                                                className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                              >
+                                                {domain.domainDetails}
+                                              </button>
+                                            ))
+                                          ) : selectedDomain?.domainDetails ? (
                                             <button
-                                              key={index}
                                               type="button"
                                               onClick={() => {
-                                                setSelectedDomain(domain);
                                                 setIsDomainDropdownOpen(false);
+                                                setTimeout(() => {
+                                                  postDomain();
+                                                }, 100);
                                               }}
-                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none font-medium"
                                             >
-                                              {domain.domainDetails}
+                                              Add "
+                                              {selectedDomain.domainDetails}"
                                             </button>
-                                          ))}
-                                      </div>
-                                    )}
+                                          ) : (
+                                            <div className="px-4 py-2 text-gray-500">
+                                              No domains found
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Selected Domains */}
+                                    <div className="flex flex-wrap gap-4 mt-6">
+                                      {jobDomains?.map((domain, index) => (
+                                        <div
+                                          key={index}
+                                          className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
+                                        >
+                                          <span>
+                                            {domain.domain.domainDetails}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            className="absolute -right-2 -top-2"
+                                            onClick={() => removeDomain(domain)}
+                                          >
+                                            <X className="w-5 h-5 text-gray-500 bg-white rounded-full border-2 border-gray-500" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -547,6 +825,8 @@ export default function Job() {
                                   className="flex-1 sm:flex-none sm:px-8 py-2 bg-white border-2 border-cyan-500 text-cyan-500 rounded-lg hover:bg-cyan-100 transition-colors duration-200 font-medium"
                                   onClick={() => {
                                     setIsSkillAdded(false);
+                                    setSelectedDomain(null);
+                                    setSelectedSkill(null);
                                   }}
                                 >
                                   Cancel
@@ -554,9 +834,13 @@ export default function Job() {
                                 <button
                                   type="button"
                                   className="flex-1 sm:flex-none sm:px-8 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors duration-200 font-medium"
-                                  onClick={postSkillDomain}
+                                  onClick={() => {
+                                    setIsSkillAdded(false);
+                                    setSelectedDomain(null);
+                                    setSelectedSkill(null);
+                                  }}
                                 >
-                                  Add
+                                  Save
                                 </button>
                               </div>
                             </div>
@@ -593,7 +877,7 @@ export default function Job() {
                             key={index}
                             className="flex items-center gap-2 px-4 py-1 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
                           >
-                            <span>{skill.technology}</span>
+                            <span>{skill.technology.technology}</span>
                           </div>
                         ))}
                     </div>
@@ -613,7 +897,7 @@ export default function Job() {
                             className="flex items-center gap-2 px-4 py-1 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
                             key={index}
                           >
-                            <span>{domain.domainDetails}</span>
+                            <span>{domain.domain.domainDetails ?? ""}</span>
                           </div>
                         ))}
                     </div>

@@ -9,7 +9,11 @@ import CandidateGridUpdate from "../Forms/candidates/candidateGridUpdate";
 import { fetchAllLocations } from "@/api/master/masterLocation";
 import { EyeIcon } from "lucide-react";
 import mammoth from "mammoth";
-import { fetchCandidateResume } from "@/api/candidates/candidates";
+import {
+  fetchCandidateResume,
+  getContactImage,
+} from "@/api/candidates/candidates";
+import { CandidateEducation } from "../Elements/cards/candidateEducation";
 
 const CandidateGrid: React.FC<{
   candidates: Candidate[];
@@ -27,12 +31,39 @@ const CandidateGrid: React.FC<{
   const [isResumeOpen, setIsResumeOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<any>(null);
+  const [images, setImages] = useState<Record<number, string>>({});
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     fetchAllLocations().then((data) => {
       setLocations(data);
     });
-  }, [isProfileUpdated]);
+    const fetchImages = async () => {
+      const imageMap: Record<number, string> = {};
+      await Promise.all(
+        candidates.map(async (c) => {
+          if (c.contactId) {
+            try {
+              const img = await getContactImage(c.contactId).then(
+                (data) => data
+              );
+              imageMap[c.contactId] = img;
+            } catch (err) {
+              console.error("Image fetch failed for", c.contactId, err);
+              setImageErrors((prev: any) => ({ ...prev, [c.contactId as number]: true }));
+            }
+          }
+        })
+      );
+      setImages(imageMap);
+    };
+
+    fetchImages();
+  }, [isProfileUpdated, candidates]);
+
+  const handleImageError = (contactId: number) => {
+    setImageErrors((prev: any) => ({ ...prev, [contactId]: true }));
+  };
 
   const toggleDropdown = (index: number) => {
     setOpenDropdown(openDropdown === index ? null : index);
@@ -102,7 +133,6 @@ const CandidateGrid: React.FC<{
           <p className="text-gray-500 text-sm mb-6">
             Add candidates to get started
           </p>
-          
         </div>
       </div>
     );
@@ -129,11 +159,23 @@ const CandidateGrid: React.FC<{
                   {candidate.isActive ? "Active" : "Inactive"}
                 </span>
                 <div className="flex justify-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center border-4 border-gray-100">
-                    <span className="text-white font-semibold text-xl">
-                      {candidate.firstName.charAt(0)}
-                      {candidate.lastName.charAt(0)}
-                    </span>
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center border-4 border-gray-100 overflow-hidden">
+                    {images[candidate.contactId ?? 0] &&
+                    !imageErrors[candidate.contactId ?? 0] ? (
+                      <img
+                        src={images[candidate.contactId ?? 0]}
+                        alt={`${candidate.firstName} ${candidate.lastName}`}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={() =>
+                          handleImageError(candidate.contactId ?? 0)
+                        }
+                      />
+                    ) : (
+                      <span className="text-white font-semibold text-xl">
+                        {candidate.firstName.charAt(0)}
+                        {candidate.lastName.charAt(0)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -169,7 +211,7 @@ const CandidateGrid: React.FC<{
                       </button>
 
                       {isProfileUpdated && selectedContactId > 0 && (
-                        <Popup onClose={() => setIsProfileUpdated(false)}>
+                        <Popup>
                           <div className="mb-10">
                             <CandidateGridUpdate
                               initialValues={selectedCandidate}
@@ -188,10 +230,7 @@ const CandidateGrid: React.FC<{
                       {candidate.resume && (
                         <button
                           onClick={() => {
-                            loadPdf(
-                              candidate.resume,
-                              candidate.contactId
-                            );
+                            loadPdf(candidate.resume, candidate.contactId);
                           }}
                           className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg"
                         >
@@ -247,16 +286,16 @@ const CandidateGrid: React.FC<{
 
               {/* Information List */}
               <div className="space-y-4">
-                {/* Education/Tech Role */}
+                {/* Education Section */}
                 <div className="flex items-center space-x-3">
                   <div className="w-4 h-4 text-gray-400 flex-shrink-0">
                     <svg fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                     </svg>
                   </div>
-                  <span className="text-sm text-gray-700">
-                    {candidate.highestEducation}
-                  </span>
+                  <div>
+                    <CandidateEducation contactId={candidate.contactId ?? 0} />
+                  </div>
                 </div>
 
                 {/* Location */}

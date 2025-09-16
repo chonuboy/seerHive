@@ -7,7 +7,8 @@ export default function Step2Preferences() {
   const formData = useSelector((state: any) => state.job.formData);
 
   // Formik field hooks
-  const [experienceField, experienceMeta] = useField("experience");
+  const [minimumexperienceField, minexperienceMeta] = useField("minimumExperience");
+  const [maximumexperienceField, maxexperienceMeta] = useField("maximumExperience");
   const [salaryInCtcField, salaryInCtcMeta] = useField("salaryInCtc");
   const [preferredJobModeField, preferredJobModeMeta] =
     useField("preferredJobMode");
@@ -31,22 +32,22 @@ export default function Step2Preferences() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block font-semibold mb-3" htmlFor="experience">
-              Experience (years) <span className="text-red-500">*</span>
+              Minimum Experience (years) <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
-                {...experienceField}
-                value={formData.experience}
-                id="experience"
+                {...minimumexperienceField}
+                value={formData.minimumExperience}
+                id="minimumExperience"
                 onChange={(e) => {
-                  experienceField.onChange(e);
-                  handleInputChange("experience", e.target.value);
+                  minimumexperienceField.onChange(e);
+                  handleInputChange("minimumExperience", e.target.value);
                 }}
-                placeholder="Enter experience in years"
-                onBlur={experienceField.onBlur}
+                placeholder="Enter minimum experience in years"
+                onBlur={minimumexperienceField.onBlur}
                 className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
               />
-              {experienceMeta.error && (
+              {minexperienceMeta.error && (
                 <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -60,7 +61,44 @@ export default function Step2Preferences() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>{experienceMeta.error}</span>
+                  <span>{minexperienceMeta.error}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-3" htmlFor="experience">
+              Maximum Experience (years)
+            </label>
+            <div className="relative">
+              <input
+                {...maximumexperienceField}
+                value={formData.maximumExperience}
+                id="maximumExperience"
+                onChange={(e) => {
+                  maximumexperienceField.onChange(e);
+                  handleInputChange("maximumExperience", e.target.value);
+                }}
+                placeholder="Enter maximum experience in years"
+                onBlur={maximumexperienceField.onBlur}
+                className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
+              />
+              {maxexperienceMeta.error && (
+                <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-1.5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>{maxexperienceMeta.error}</span>
                 </div>
               )}
             </div>
@@ -68,13 +106,14 @@ export default function Step2Preferences() {
 
           <div>
             <label className="block font-semibold mb-3" htmlFor="salaryInCtc">
-              Salary Range (LPA) <span className="text-red-500">*</span>
+              Budget (LPA) <span className="text-red-500">*</span>
             </label>
             <div>
               <input
                 {...salaryInCtcField}
                 type="number"
                 id="salaryInCtc"
+                min={0}
                 value={formData.salaryInCtc}
                 onChange={(e) => {
                   salaryInCtcField.onChange(e);
@@ -112,6 +151,7 @@ export default function Step2Preferences() {
                 {...numberOfOpeningsField}
                 type="number"
                 id="noOfOpenings"
+                min={1}
                 value={formData.noOfOpenings}
                 onChange={(e) => {
                   numberOfOpeningsField.onChange(e);

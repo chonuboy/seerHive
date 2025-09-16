@@ -7,6 +7,8 @@ import { useRouter } from "next/router";
 import { clientLocationFormValues } from "@/lib/models/client";
 import { X } from "lucide-react";
 import { toast } from "react-toastify";
+import { fetchAllLocations } from "@/api/master/masterLocation";
+import { Location } from "@/lib/definitions";
 
 export default function Step1BasicDetails() {
   const dispatch = useDispatch();
@@ -15,7 +17,7 @@ export default function Step1BasicDetails() {
   // Formik field hooks
   const [jobTitleField, jobTitleMeta] = useField("jobTitle");
   const [jobCodeField, jobCodeMeta] = useField("jobCode");
-  const [jobLocationField, jobLocationMeta] = useField("jobLocation");
+  const [jobLocationField, jobLocationMeta] = useField("locations");
   const [insertedByField, insertedByMeta] = useField("insertedBy");
   const [jobStatusField, jobStatusMeta] = useField("isJobActive");
   const [allClientLocations, setAllClientLocations] = useState([]);
@@ -34,11 +36,11 @@ export default function Step1BasicDetails() {
     dispatch(updateAddJobFormData({ [field]: value }));
   };
 
-  const handleSelectSuggestion = (suggestion: clientLocationFormValues) => {
+  const handleSelectSuggestion = (suggestion: Location) => {
     if (
-      formData.jobLocations?.some(
+      formData.locations?.some(
         (location: any) =>
-          location.clientLocationId === suggestion.clientLocationId
+          location.locationDetails === suggestion.locationDetails
       )
     ) {
       toast.error("Location already added", { position: "top-center" });
@@ -47,12 +49,11 @@ export default function Step1BasicDetails() {
 
     dispatch(
       updateAddJobFormData({
-        jobLocations: [
-          ...(formData.jobLocations || []),
+        locations: [
+          ...(formData.locations || []),
           {
-            clientLocationId: suggestion.clientLocationId,
-            state: suggestion.state,
-            country: suggestion.country,
+            locationId: suggestion.locationId,
+            locationDetails: suggestion.locationDetails,
           },
         ],
       })
@@ -64,14 +65,9 @@ export default function Step1BasicDetails() {
 
   useEffect(() => {
     if (router.query.id) {
-      fetchAllClientLocations().then((data) => {
-        console.log(data)
-        if (data.length > 0 && data[0].client?.clientId) {
-          const filteredLocations = data.filter(
-            (location: any) =>
-              location.client.clientId === Number(router.query.id)
-          );
-          setAllClientLocations(filteredLocations);
+      fetchAllLocations().then((data) => {
+        if (data.length > 0) {
+          setAllClientLocations(data);
         }
       });
     }
@@ -85,7 +81,7 @@ export default function Step1BasicDetails() {
     // Filter suggestions based on input
     if (e.target.value) {
       const filtered = allClientLocations.filter((location: any) =>
-        `${location.state.locationDetails}, ${location.country.locationDetails}`
+        `${location.locationDetails}`
           .toLowerCase()
           .includes(e.target.value.toLowerCase())
       );
@@ -185,8 +181,8 @@ export default function Step1BasicDetails() {
               <input
                 className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
                 type="text"
-                name="jobLocation"
-                id="jobLocation"
+                name="locations"
+                id="locations"
                 placeholder="Select Job Location"
                 value={inputValue}
                 onChange={handleLocationInputChange}
@@ -204,35 +200,32 @@ export default function Step1BasicDetails() {
                         key={index}
                         onClick={() => handleSelectSuggestion(location)}
                       >
-                        {location.state.locationDetails}
-                        {", "}
-                        {location.country.locationDetails}
+                        {location.locationDetails}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-              {formData.jobLocations && formData.jobLocations.length > 0 && (
+              {formData.locations && formData.locations.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-3">
-                  {formData.jobLocations.map((location: any, index: number) => (
+                  {formData.locations.map((location: any, index: number) => (
                     <div
                       key={index}
                       className="flex items-center gap-2 px-4 py-1 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
                     >
                       <span>
-                        {location.state.locationDetails},{" "}
-                        {location.country.locationDetails}
+                        {location.locationDetails}
                       </span>
                       <button
                         type="button"
                         className="absolute -right-2 -top-2"
                         onClick={() => {
-                          const updatedLocations = formData.jobLocations.filter(
+                          const updatedLocations = formData.locations.filter(
                             (_: any, i: number) => i !== index
                           );
                           dispatch(
                             updateAddJobFormData({
-                              jobLocations: updatedLocations,
+                              locations: updatedLocations,
                             })
                           );
                         }}
@@ -266,49 +259,9 @@ export default function Step1BasicDetails() {
       </div>
 
       <div className="space-y-4 mt-4">
-        <h2 className="text-xl font-semibold text-cyan-500">
-          Miscellaneous
-        </h2>
+        <h2 className="text-xl font-semibold text-cyan-500">Miscellaneous</h2>
 
         <div className="space-y-8">
-          <div>
-            <label className="block font-semibold" htmlFor="insertedBy">
-              Job Post Created By <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="insertedBy"
-                {...insertedByField}
-                value={formData.insertedBy}
-                onChange={(e) => {
-                  insertedByField.onChange(e);
-                  handleInputChange("insertedBy", e.target.value);
-                }}
-                onBlur={insertedByField.onBlur}
-                placeholder="Enter full name"
-                className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
-              />
-              {insertedByMeta.error && (
-                <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>{insertedByMeta.error}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
           <div>
             <label className="block font-semibold mb-3" htmlFor="jobStatus">
               Job Status <span className="text-red-500">*</span>

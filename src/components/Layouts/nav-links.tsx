@@ -15,6 +15,7 @@ import {
   LineChart,
   Settings,
   LogOut,
+  Timer,
   type LucideIcon,
 } from "lucide-react";
 import { useDispatch } from "react-redux";
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { name: "Candidates", icon: User, href: "/candidates" },
   { name: "Clients", icon: Building, href: "/clients" },
   { name: "Jobs", icon: Briefcase, href: "/alljobs" },
+  { name: "Interviews", icon: Timer, href: "/interviews" },
   { name: "Recruitment", icon: ClipboardList, href: "/recruitments" },
   { name: "Search", icon: Search, href: "/search" },
   {
@@ -124,10 +126,10 @@ export default function NavLinks() {
         ))}
         <button
           className={`py-2 px-4 rounded-md text-md font-semibold w-full transition-colors flex h-[48px] grow items-center justify-center gap-4 md:flex-none md:justify-start md:p-2 md:px-3 ${
-                pathname == "/login"
-                  ? "bg-white text-black"
-                  : "text-gray-600 hover:bg-blue-200 hover:text-cyan-600"
-              }`}
+            pathname == "/login"
+              ? "bg-white text-black"
+              : "text-gray-600 hover:bg-blue-200 hover:text-cyan-600"
+          }`}
           onClick={() => {
             dispatch(logout());
             localStorage.clear();

@@ -119,7 +119,6 @@ export const CandidateSchema = yup.object({
 });
 
 export const candidateSearchSchema = yup.object().shape({
-  techRole: yup.string().nullable(),
   minExperience: yup.number().nullable(),
   maxExperience: yup.number().nullable(),
   currentLocation: yup.string().nullable(),
@@ -133,6 +132,9 @@ export const candidateSearchSchema = yup.object().shape({
   mustHaveTechnologies: yup.array().nullable(),
   goodToHaveTechnologies: yup.array().nullable().of(yup.string()).nullable(),
   companies: yup.array().nullable().of(yup.string()).nullable(),
+  universities: yup.array().nullable().of(yup.string()).nullable(),
+  courses: yup.array().nullable().of(yup.string()).nullable(),
+  levels: yup.array().nullable().of(yup.string()).nullable(),
 });
 
 export interface Resume {
@@ -241,7 +243,6 @@ export interface Domains {
 }
 
 export interface SearchQueries {
-  techRole?: string | null;
   minExperience?: number | null;
   maxExperience?: number | null;
   currentLocation?: string | null;
@@ -256,6 +257,9 @@ export interface SearchQueries {
   mustHaveTechnologies?: string[] | null;
   goodToHaveTechnologies?: string[] | null;
   companies?: string[] | null;
+  universities?: string[] | null;
+  courses?: string[] | null;
+  levels?: string[] | null;
 }
 
 export interface ReqData {
@@ -379,9 +383,9 @@ export const profileUpdateSchema = yup.object().shape({
       locationDetails: yup.string().nullable(),
     })
     .nullable(),
-  preferredJobModes: yup.array().nullable(), // Added preferredJobModes
-  hiringTypes: yup.array().nullable(), // Added hiringTypes
-  contactId: yup.number().nullable(), // Added contactId
+  preferredJobModes: yup.array().nullable(),
+  hiringTypes: yup.array().nullable(),
+  contactId: yup.number().nullable(),
 });
 
 export const candidateGridUpdateSchema = yup.object().shape({
@@ -449,12 +453,6 @@ export const candidateGridUpdateSchema = yup.object().shape({
     .nullable()
     .min(3, "Must be at least 3 characters")
     .max(50, "Must be 50 characters or less"),
-  highestEducation: yup
-    .string()
-    .min(3, "Must be at least 3 characters")
-    .max(30, "Must be 30 characters or less")
-    .matches(/^[a-zA-Z. ]+$/, "Only alphabets are allowed")
-    .nullable(),
 });
 
 export const interviewFormSchema = yup.object().shape({
@@ -570,7 +568,10 @@ export const step1Schema = yup.object({
   maritalStatus: yup.string().required("Select marital status"),
   candidateStatus: yup.string().required("Select status"),
   differentlyAbled: yup.string().required("Select your preference"),
-  currentLocation: yup.object().required("Current location is required"),
+  currentLocation: yup.object().shape({
+    locationId: yup.number().min(1, "Current Location is required").required(),
+    insertedOn: yup.string().nullable(),
+  }),
   pinCode: yup
     .string()
     .typeError("Pincode must be a number")
@@ -594,11 +595,6 @@ export const step2Schema = yup.object({
 });
 
 export const step3Schema = yup.object({
-  highestEducation: yup
-    .string()
-    .min(3, "Must be at least 3 characters")
-    .max(30, "Must be 50 characters or less")
-    .required("Highest education is required"),
   totalExperience: yup.number().required("Experience is required"),
   designation: yup
     .string()

@@ -59,7 +59,7 @@ export const updateCandidate = async (reqData: any, id: number) => {
   }
 };
 
-export const fetchCandidates = async (page: number = 0, size: number = 10) => {
+export const fetchCandidates = async (page: number = 0, size: number = 100) => {
   try {
     const response = await axios.get(`${API_URL}contacts/allContacts`, {
       params: {
@@ -242,5 +242,57 @@ export async function uploadImage(file: File) {
   } catch (err: any) {
     console.error("Image upload error:", err);
     throw err; // Rethrow to handle in the component
+  }
+}
+
+export async function getCandidateCount(){
+  try {
+    const response = await axios.get(`${API_URL}contacts/allContacts?size=100`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+      },
+    });
+    return response.data.totalElements;
+  } catch (err: any) {
+    return err.response ? err.response.data : err.message;
+  }
+}
+
+export async function getActiveContactsCount(){
+  try {
+    const response = await axios.get(`${API_URL}contacts/allContacts?size=100`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+      },
+    });
+    return response.data.content;
+  } catch (err: any) {
+    return err.response ? err.response.data : err.message;
+  }
+}
+
+
+export async function getContactImage(id: number) {
+  try {
+    const response = await axios.get(`${API_URL}contacts/image/${id}`, {
+      responseType: "blob", // Important: treat as binary
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+      },
+    });
+
+    // Convert Blob to an object URL
+    const imageUrl = URL.createObjectURL(response.data);
+    return imageUrl;
+
+  } catch (err: any) {
+    return err.response ? err.response.data : err.message;
   }
 }

@@ -167,20 +167,20 @@ export default function Step1BasicDetails({
           />
           {dobMeta.error && (
             <div className="flex items-center mt-4 gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{dobMeta.error}</span>
-              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{dobMeta.error}</span>
+            </div>
           )}
         </div>
 
@@ -337,20 +337,20 @@ export default function Step1BasicDetails({
           </div>
           {genderMeta.error && (
             <div className="flex items-center mt-4 gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{genderMeta.error}</span>
-              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{genderMeta.error}</span>
+            </div>
           )}
         </div>
 
@@ -392,20 +392,20 @@ export default function Step1BasicDetails({
           </div>
           {maritalStatusMeta.error && (
             <div className="flex items-center mt-4 gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{maritalStatusMeta.error}</span>
-              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{maritalStatusMeta.error}</span>
+            </div>
           )}
         </div>
       </div>
@@ -419,33 +419,38 @@ export default function Step1BasicDetails({
             {...currentLocationField}
             name="currentLocation"
             placeholder="Enter Current Location"
-            value={formData.currentLocation.locationDetails}
+            value={formData.currentLocation.locationDetails || ""}
             onAdd={addNewLocation}
             options={locations}
             id="currentLocation"
             onChange={(e: any) => {
               handleInputChange("currentLocation", {
                 locationId: e.locationId,
+                locationDetails: e.locationDetails,
               });
             }}
             styleMod="p-0"
           ></LocationAutocomplete>
           {currentLocationMeta.error && (
-            <div className="flex items-center mt-4 gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{currentLocationMeta.error}</span>
-              </div>
+            <div className="flex flex-col mt-4 gap-1 text-red-600 font-medium">
+              {Object.values(currentLocationMeta.error).map((err: any, i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-1.5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>{err}</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -596,20 +601,20 @@ export default function Step1BasicDetails({
           </div>
           {candidateStatusMeta.error && (
             <div className="flex items-center mt-4 gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{candidateStatusMeta.error}</span>
-              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{candidateStatusMeta.error}</span>
+            </div>
           )}
         </div>
 
@@ -648,20 +653,20 @@ export default function Step1BasicDetails({
           </div>
           {differentlyAbledMeta.error && (
             <div className="flex items-center mt-4 gap-1 text-red-600 font-medium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{differentlyAbledMeta.error}</span>
-              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{differentlyAbledMeta.error}</span>
+            </div>
           )}
         </div>
       </div>

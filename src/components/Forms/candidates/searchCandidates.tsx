@@ -5,16 +5,33 @@ import { TagInput } from "./inputs";
 import { SingleInput } from "./inputs";
 import { candidateSearchSchema } from "@/lib/models/candidate";
 import type { SearchQueries } from "@/lib/models/candidate";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { setSearchQuery } from "@/Features/candidateSearchSlice";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
+import { fetchAllTechnologies } from "@/api/master/masterTech";
+import { fetchAllDomains } from "@/api/master/domain";
+import { fetchAllCompanies } from "@/api/master/masterCompany";
+import { fetchAllLocations } from "@/api/master/masterLocation";
+import { fetchAllCourses } from "@/api/candidates/courses";
+import { fetchAllUniversities } from "@/api/candidates/university";
 
 const SearchForm: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const dispatch = useDispatch();
   const router = useRouter();
+  const [isSkillDropdownOpen, setIsSkillDropdownOpen] = useState(false);
+  const [allTech, setAllTech] = useState([]);
+  const [allDomain, setAllDomain] = useState([]);
+  const [allCompanies, setAllCompanies] = useState([]);
+  const [allLocations, setAllLocations] = useState([]);
+  const [allUniversity, setAllUniversity] = useState([]);
+  const [allLevels, setAllLevels] = useState<string[] | null>([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [filteredLocations, setFilteredLocations] = useState([]);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState("");
 
   const handleJobModeChange = (value: string, checked: boolean) => {
     if (checked) {
@@ -43,9 +60,35 @@ const SearchForm: React.FC = () => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCurrentLocation(value);
+    formik.setFieldValue("currentLocation", value);
+
+    const filteredSuggestions = allLocations.filter((option: string) =>
+      option?.toLowerCase().includes(value.toLowerCase())
+    );
+
+    setFilteredLocations(filteredSuggestions);
+    setShowLocationSuggestions(true);
+  };
+
+  const handleSuggestionClick = (suggestion: any) => {
+    setCurrentLocation(suggestion);
+    formik.setFieldValue("currentLocation", suggestion);
+    setShowLocationSuggestions(false);
+  };
+
+  const handleInputBlur = (e: any) => {
+    // Use setTimeout to allow click event on suggestions to fire first
+    setTimeout(() => {
+      setShowLocationSuggestions(false);
+    }, 200);
+    formik.handleBlur(e);
+  };
+
   const formik = useFormik<SearchQueries>({
     initialValues: {
-      techRole: null,
       minExperience: null,
       maxExperience: null,
       currentLocation: null,
@@ -60,6 +103,9 @@ const SearchForm: React.FC = () => {
       mustHaveTechnologies: null,
       goodToHaveTechnologies: null,
       companies: [],
+      universities: [],
+      courses: [],
+      levels: [],
     },
     validationSchema: candidateSearchSchema,
     onSubmit: (values) => {
@@ -71,6 +117,21 @@ const SearchForm: React.FC = () => {
       }
       if (values.domain?.length === 0) {
         values.domain = null;
+      }
+      if (values.universities?.length === 0) {
+        values.universities = null;
+      }
+      if (values.courses?.length === 0) {
+        values.courses = null;
+      }
+      if (values.levels?.length === 0) {
+        values.levels = null;
+      }
+      if (values.preferredJobMode?.length === 0) {
+        values.preferredJobMode = null;
+      }
+      if (values.contactHiringType?.length === 0) {
+        values.contactHiringType = null;
       }
 
       const payload = Object.entries(values).reduce(
@@ -105,7 +166,35 @@ const SearchForm: React.FC = () => {
   useEffect(() => {
     console.log(formik.values);
     console.log(formik.errors);
-  }, [formik.values, formik.errors]);
+    fetchAllTechnologies().then((res) => {
+      setAllTech(res);
+    });
+    fetchAllDomains().then((res) => {
+      const domainArray = res.map((item: any) => item.domainDetails);
+      setAllDomain(domainArray);
+    });
+    fetchAllCompanies().then((res) => {
+      const companyArray = res.map((item: any) => item.companyName);
+      setAllCompanies(companyArray);
+    });
+    fetchAllLocations().then((res) => {
+      const locationArray = res.map((item: any) => item.locationDetails);
+      setAllLocations(locationArray);
+      setFilteredLocations(locationArray);
+    });
+    fetchAllCourses().then((res) => {
+      const courseArray = res.map((item: any) => item.courseName);
+      const levelArray: string[] = [
+        ...new Set(res.map((item: any) => item.level) as string[]),
+      ];
+      setAllCourses(courseArray);
+      setAllLevels(levelArray);
+    });
+    fetchAllUniversities().then((res) => {
+      const universityArray = res.map((item: any) => item.universityName);
+      setAllUniversity(universityArray);
+    });
+  }, []);
 
   const handleAddGoodToHave = () => {
     if (
@@ -190,7 +279,7 @@ const SearchForm: React.FC = () => {
       noValidate
       className="rounded-xl space-y-10"
     >
-      {/* Technical Skills Section */}  
+      {/* Technical Skills Section */}
       <div className="bg-white p-4 rounded-lg">
         <h2 className="font-bold text-2xl mb-8 text-cyan-500 border-b-2 border-blue-500 pb-2">
           Technical
@@ -202,12 +291,49 @@ const SearchForm: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Enter technologies..."
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  setIsSkillDropdownOpen(true);
+                }}
+                onFocus={() => setIsSkillDropdownOpen(true)}
+                placeholder="Type or select a skill..."
                 className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
               />
+
+              {isSkillDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 -mt-0 bg-white border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {/* Filter options based on input */}
+                  {allTech &&
+                    allTech
+                      .filter((skill: any) =>
+                        skill.technology
+                          .toLowerCase()
+                          .includes(inputValue.toLowerCase())
+                      )
+                      .map((skill: any) => (
+                        <button
+                          key={skill.techId}
+                          type="button"
+                          onClick={() => {
+                            setInputValue(skill.technology);
+                            setIsSkillDropdownOpen(false);
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                        >
+                          {skill.technology}
+                        </button>
+                      ))}
+                </div>
+              )}
               <div className="md:absolute inset-y-0 right-0 flex items-center gap-3 pr-3 mt-3 md:mt-0">
+                <button
+                  type="button"
+                  onClick={() => setIsSkillDropdownOpen(!isSkillDropdownOpen)}
+                  className="text-gray-400 focus:outline-none"
+                >
+                  <ChevronDown className="w-5 h-5" />
+                </button>
                 <button
                   type="button"
                   onClick={handleAddGoodToHave}
@@ -262,27 +388,6 @@ const SearchForm: React.FC = () => {
               ))}
             </div>
           </div>
-
-          {/* Domain */}
-          <TagInput
-            name="domains"
-            title="Domain Expertise"
-            placeholder="Enter domains..."
-            tags={formik.values.domain ?? []}
-            onAddTag={(tag) => handleAddTag("domain", tag)}
-            onRemoveTag={(tag) => handleRemoveTag("domain", tag)}
-            error={formik.touched.domain ? formik.errors.domain : null}
-          />
-
-          {/* Companies */}
-          <TagInput
-            name="companies"
-            title="Previous Companies"
-            placeholder="Enter companies..."
-            tags={formik.values.companies ?? []}
-            onAddTag={(tag) => handleAddTag("companies", tag)}
-            onRemoveTag={(tag) => handleRemoveTag("companies", tag)}
-          />
         </div>
       </div>
 
@@ -292,29 +397,6 @@ const SearchForm: React.FC = () => {
           Role & Experience
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          <SingleInput
-            name="techRole"
-            title="Tech Role"
-            placeholder="Enter role..."
-            value={formik.values.techRole}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-          />
-
-          <SingleInput
-            name="highestEducation"
-            title="Qualification"
-            placeholder="Enter qualification..."
-            value={formik.values.highestEducation}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={
-              formik.touched.highestEducation
-                ? formik.errors.highestEducation
-                : null
-            }
-          />
-
           <SingleInput
             name="minExperience"
             title="Min Experience (years)"
@@ -338,6 +420,95 @@ const SearchForm: React.FC = () => {
               formik.touched.maxExperience ? formik.errors.maxExperience : null
             }
           />
+          <SingleInput
+            name="highestEducation"
+            title="Qualification"
+            placeholder="Enter qualification..."
+            value={formik.values.highestEducation}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={
+              formik.touched.highestEducation
+                ? formik.errors.highestEducation
+                : null
+            }
+          />
+        </div>
+      </div>
+
+      {/* Compensation & Notice Section */}
+      <div className="bg-white p-6 rounded-lg">
+        <h2 className="font-bold text-2xl mb-12 text-cyan-500 border-b-2 border-orange-500 pb-2">
+          Compensation & Notice Period
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <SingleInput
+            name="minSalary"
+            title="Min CTC (LPA)"
+            placeholder="0"
+            value={formik.values.minSalary}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.minSalary ? formik.errors.minSalary : null}
+          />
+
+          <SingleInput
+            name="maxSalary"
+            title="Max CTC (LPA)"
+            placeholder="50"
+            value={formik.values.maxSalary}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.maxSalary ? formik.errors.maxSalary : null}
+          />
+
+          <SingleInput
+            name="noticePeriod"
+            title="Notice Period (days)"
+            placeholder="30"
+            value={formik.values.noticePeriod}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={
+              formik.touched.noticePeriod ? formik.errors.noticePeriod : null
+            }
+          />
+        </div>
+      </div>
+
+      {/* Education Section */}
+      <div className="bg-white p-6 rounded-lg">
+        <h2 className="font-bold text-2xl mb-12 text-cyan-500 border-b-2 border-green-500 pb-2">
+          Education
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <TagInput
+            name="Graduation Levels"
+            title="Graduation Levels"
+            placeholder="Enter graduation levels..."
+            tags={formik.values.levels ?? []}
+            onAddTag={(tag) => handleAddTag("levels", tag)}
+            onRemoveTag={(tag) => handleRemoveTag("levels", tag)}
+            masterProps={allLevels}
+          />
+          <TagInput
+            name="Preferred Courses"
+            title="Preferred Courses"
+            placeholder="Enter preferred courses..."
+            tags={formik.values.courses ?? []}
+            onAddTag={(tag) => handleAddTag("courses", tag)}
+            onRemoveTag={(tag) => handleRemoveTag("courses", tag)}
+            masterProps={allCourses}
+          />
+          <TagInput
+            name="Preferred Universities"
+            title="Preferred Universities"
+            placeholder="Enter preferred universities..."
+            tags={formik.values.universities ?? []}
+            onAddTag={(tag) => handleAddTag("universities", tag)}
+            onRemoveTag={(tag) => handleRemoveTag("universities", tag)}
+            masterProps={allUniversity}
+          />
         </div>
       </div>
 
@@ -347,14 +518,34 @@ const SearchForm: React.FC = () => {
           Location & Job Preferences
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <SingleInput
-            name="currentLocation"
-            title="Current Location"
-            placeholder="Enter location..."
-            value={formik.values.currentLocation}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-          />
+          <div className="relative w-full">
+            <label className="font-semibold text-xl">Current Location</label>
+            <input
+              className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
+              type="text"
+              name="currentLocation"
+              placeholder="Enter Current Location"
+              value={currentLocation}
+              onChange={handleInputChange}
+              onBlur={handleInputBlur}
+            />
+
+            {showLocationSuggestions && filteredLocations.length > 0 && (
+              <div className="absolute left-0 right-0 mt-1 z-10 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <ul className="py-2 text-base text-gray-700">
+                  {filteredLocations.map((suggestion, index) => (
+                    <li
+                      key={index}
+                      className="block px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onMouseDown={() => handleSuggestionClick(suggestion)}
+                    >
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
           <TagInput
             name="preferredLocations"
@@ -363,6 +554,30 @@ const SearchForm: React.FC = () => {
             tags={formik.values.preferredLocation ?? []}
             onAddTag={(tag) => handleAddTag("preferredLocation", tag)}
             onRemoveTag={(tag) => handleRemoveTag("preferredLocation", tag)}
+            masterProps={allLocations}
+          />
+
+          {/* Domain */}
+          <TagInput
+            name="domains"
+            title="Domain Expertise"
+            placeholder="Enter domains..."
+            tags={formik.values.domain ?? []}
+            onAddTag={(tag) => handleAddTag("domain", tag)}
+            onRemoveTag={(tag) => handleRemoveTag("domain", tag)}
+            error={formik.touched.domain ? formik.errors.domain : null}
+            masterProps={allDomain}
+          />
+
+          {/* Companies */}
+          <TagInput
+            name="companies"
+            title="Previous Companies"
+            placeholder="Enter companies..."
+            tags={formik.values.companies ?? []}
+            onAddTag={(tag) => handleAddTag("companies", tag)}
+            onRemoveTag={(tag) => handleRemoveTag("companies", tag)}
+            masterProps={allCompanies}
           />
 
           {/* Job Mode Preferences */}
@@ -422,46 +637,6 @@ const SearchForm: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Compensation & Notice Section */}
-      <div className="bg-white p-6 rounded-lg">
-        <h2 className="font-bold text-2xl mb-12 text-cyan-500 border-b-2 border-orange-500 pb-2">
-          Compensation & Notice Period
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          <SingleInput
-            name="minSalary"
-            title="Min CTC (LPA)"
-            placeholder="0"
-            value={formik.values.minSalary}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.minSalary ? formik.errors.minSalary : null}
-          />
-
-          <SingleInput
-            name="maxSalary"
-            title="Max CTC (LPA)"
-            placeholder="50"
-            value={formik.values.maxSalary}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.maxSalary ? formik.errors.maxSalary : null}
-          />
-
-          <SingleInput
-            name="noticePeriod"
-            title="Notice Period (days)"
-            placeholder="30"
-            value={formik.values.noticePeriod}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={
-              formik.touched.noticePeriod ? formik.errors.noticePeriod : null
-            }
-          />
         </div>
       </div>
 

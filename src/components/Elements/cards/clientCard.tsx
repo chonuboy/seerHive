@@ -6,6 +6,7 @@ import { fetchClient } from "@/api/master/clients";
 import ClientInfoUpdateForm from "@/components/Forms/clients/updateClientInfo";
 import { fetchAllLocations } from "@/api/master/masterLocation";
 import { Location } from "@/lib/definitions";
+import { ArrowBigLeftDashIcon } from "lucide-react";
 
 export default function ClientCard({
   id,
@@ -30,6 +31,13 @@ export default function ClientCard({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg px-2 py-6 shadow-sm">
+      <div
+        className="flex items-center gap-2 pb-6 text-xl text-cyan-500 cursor-pointer hover:text-cyan-600"
+        onClick={() => router.back()}
+      >
+        <ArrowBigLeftDashIcon className="w-6 h-6" />
+        <button className="border-b">Back to Previous Page</button>
+      </div>
       {/* Header Section */}
       <div className="flex justify-between mb-6">
         <div>
@@ -78,7 +86,7 @@ export default function ClientCard({
         </button>
 
         {isclientUpdated && (
-          <Popup onClose={() => setIsClientUpdated(false)}>
+          <Popup>
             <ClientInfoUpdateForm
               currentClient={currentClient}
               id={id}

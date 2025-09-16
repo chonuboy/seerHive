@@ -13,10 +13,10 @@ export default function AddSkillsForm({
   autoClose,
   candidateTechs,
 }: {
-  technologis: Technology[];
+  technologis?: Technology[];
   Id: any;
   autoClose: () => void;
-  candidateTechs: allTechs[];
+  candidateTechs?: allTechs[];
 }) {
   const [selectedSkill, setSelectedSkill] = useState("");
   const [experienceYears, setExperienceYears] = useState("0");
@@ -179,9 +179,9 @@ export default function AddSkillsForm({
               </div>
 
               {isSkillDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 -mt-0 bg-white border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
                   {/* Filter options based on input */}
-                  {allTech
+                  {allTech && allTech
                     .filter((skill) =>
                       skill.technology
                         .toLowerCase()

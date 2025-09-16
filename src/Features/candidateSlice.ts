@@ -12,7 +12,7 @@ export interface CandidateFormData {
   secondaryNumber: string | null;
   gender: string;
   maritalStatus: string;
-  currentLocation: Location;
+  currentLocation: any;
   pinCode: string | null;
   address1: string | null;
   addressLocality: string | null;
@@ -53,7 +53,7 @@ const initialFormData: CandidateFormData = {
   secondaryNumber: null,
   gender: "",
   maritalStatus: "",
-  currentLocation: { locationId: 1, locationDetails: "", insertedOn: "" },
+  currentLocation: { locationId: 0, locationDetails: "", insertedOn: "" },
   pinCode: null,
   address1: null,
   addressLocality: null,

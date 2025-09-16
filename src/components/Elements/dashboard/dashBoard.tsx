@@ -66,7 +66,7 @@ export default function Dashboard() {
                 : "border-transparent hover:border-gray-300"
             }`}
           >
-            Candidates
+            Employees
           </button>
         </nav>
       </div>

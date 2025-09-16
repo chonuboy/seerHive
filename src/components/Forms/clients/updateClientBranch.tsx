@@ -95,7 +95,7 @@ const UpdateClientLocation = ({
   };
 
   return (
-    <Popup onClose={() => autoClose()}>
+    <Popup>
       <div className="min-h-screen my-8">
         <div className="bg-white shadow-lg rounded-2xl mx-auto max-w-4xl">
           {/* Header */}
@@ -213,6 +213,39 @@ const UpdateClientLocation = ({
                     onAdd={UpdateNewCity}
                   />
                 </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="checkbox"
+                    id="isHeadQuarter"
+                    name="isHeadQuarter"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  <label
+                    htmlFor="isHeadQuarter"
+                    className="text-gray-400 text-sm"
+                  >
+                    Make This is as HeadQuarters
+                  </label>
+                  {formik.touched.isHeadQuarter &&
+                    formik.errors.isHeadQuarter && (
+                      <div className="flex items-center text-sm text-center gap-1 text-red-600 font-medium">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 mr-1.5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span>{formik.errors.isHeadQuarter}</span>
+                      </div>
+                    )}
+                </div>
               </div>
             </div>
 
@@ -248,33 +281,6 @@ const UpdateClientLocation = ({
                       </div>
                     )}
                 </div>
-
-                {/* Technical Person */}
-                <div>
-                  <label
-                    htmlFor="technicalPerson"
-                    className="block font-semibold text-gray-700 mb-2"
-                  >
-                    Technical Person
-                  </label>
-                  <input
-                    id="technicalPerson"
-                    name="technicalPerson"
-                    type="text"
-                    className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors focus:outline-none"
-                    placeholder="Enter Technical Person Name"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.technicalPerson}
-                  />
-                  {formik.touched.technicalPerson &&
-                    formik.errors.technicalPerson && (
-                      <div className="text-red-500 text-sm mt-1">
-                        {formik.errors.technicalPerson}
-                      </div>
-                    )}
-                </div>
-
                 {/* HR Mobile Number */}
                 <div>
                   <label

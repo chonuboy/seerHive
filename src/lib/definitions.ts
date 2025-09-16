@@ -42,7 +42,7 @@ export type Candidate = {
 };
 
 export type Location = {
-	locationId?: number
+	locationId?: number|null
 	locationDetails?: string
 	insertedOn?: string
 }

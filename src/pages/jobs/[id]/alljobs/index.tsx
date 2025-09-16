@@ -61,8 +61,9 @@ export default function AllJobs() {
 
   useEffect(() => {
     try {
-      fetchAllJobs().then((data) => {
-        setAllJobs(data);
+      fetchAllJobs(0, 100).then((data) => {
+        setAllJobs(data.content);
+        console.log(data);
       });
       const candidateId = localStorage.getItem("interviewCandidateId");
       setContactId(Number(candidateId));
@@ -71,17 +72,7 @@ export default function AllJobs() {
         position: "top-right",
       });
     }
-  });
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  }, []);
 
   return (
     <MainLayout>

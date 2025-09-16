@@ -69,10 +69,12 @@ export default function Client() {
           const filteredLocations = data.filter(
             (location: any) => location.client.clientId === id
           );
+          console.log(filteredLocations);
           const filteredHq = filteredLocations.filter(
             (location: any) => location.isHeadQuarter
           );
           setHqInfo(filteredHq);
+          console.log(filteredHq);
           setCurrentClientLocations(filteredLocations);
         }
       });
@@ -183,8 +185,8 @@ export default function Client() {
                               <div>
                                 <div className="flex items-center gap-3 mb-1">
                                   <h3 className="text-xl font-semibold">
-                                    {city.state.locationDetails},{" "}
-                                    {city.country.locationDetails}
+                                    {city.state.locationDetails ?? "No Data"},{" "}
+                                    {city?.country?.locationDetails ?? "No Data"}
                                   </h3>
                                   {city.isHeadQuarter && (
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-400 text-yellow-900">
@@ -309,7 +311,7 @@ export default function Client() {
 
                         {/* Edit Popup */}
                         {editingLocationId === city.clientLocationId && (
-                          <Popup onClose={() => setEditingLocationId(null)}>
+                          <Popup>
                             <UpdateClientLocation
                               currentClientLocation={city}
                               masterLocations={masterLocations}
@@ -349,7 +351,7 @@ export default function Client() {
                 Add Job
               </button>
               {isAddJob && (
-                <Popup onClose={() => setIsAddJob(false)}>
+                <Popup>
                   <AddNewJob
                     client={currentClient}
                     autoClose={() => setIsAddJob(false)}

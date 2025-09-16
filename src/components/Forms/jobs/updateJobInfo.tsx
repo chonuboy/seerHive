@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import { clientLocationFormValues, jobUpdateSchema } from "@/lib/models/client";
 import { updateJob } from "@/api/client/clientJob";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CancelButton from "@/components/Elements/utils/CancelButton";
 import SubmitButton from "@/components/Elements/utils/SubmitButton";
 import QuillEditor from "@/components/Elements/utils/QuilEditor";
@@ -11,6 +11,8 @@ import QuillEditor from "@/components/Elements/utils/QuilEditor";
 // Quill CSS once globally
 import "quill/dist/quill.snow.css";
 import { X } from "lucide-react";
+import { Location } from "@/lib/definitions";
+import { fetchAllLocations } from "@/api/master/masterLocation";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
@@ -30,6 +32,15 @@ export default function JobInfoUpdateForm({
     []
   );
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [allClientLocations, setAllClientLocations] = useState([]);
+
+  useEffect(() => {
+    fetchAllLocations().then((data) => {
+      if (data.length > 0) {
+        setAllClientLocations(data);
+      }
+    });
+  }, []);
   const getUpdatedFields = (initialValues: any, values: any) => {
     return Object.keys(values).reduce((acc: Record<string, any>, key) => {
       if (values[key] !== initialValues[key]) {
@@ -47,29 +58,27 @@ export default function JobInfoUpdateForm({
 
     // Filter suggestions based on input
     if (e.target.value) {
-      const filtered = currentJob.jobLocations.filter((location: any) =>
-        `${location.state.locationDetails}, ${location.country.locationDetails}`
+      const filtered = allClientLocations.filter((location: any) =>
+        `${location.locationDetails}`
           .toLowerCase()
           .includes(e.target.value.toLowerCase())
       );
       setSuggestions(filtered);
     } else {
-      setSuggestions(currentJob.jobLocations);
+      setSuggestions(allClientLocations);
     }
   };
-  const handleSelectSuggestion = (suggestion: clientLocationFormValues) => {
-    if (
-      currentJob.jobLocations?.some(
-        (location: any) =>
-          location.clientLocationId === suggestion.clientLocationId
-      )
-    ) {
-      toast.error("Location already added", { position: "top-center" });
-      setShowSuggestions(false);
-      return;
+  const handleSelectSuggestion = (location: any) => {
+    const alreadyExists = formik.values.locations?.some(
+      (loc: any) => loc.locationId === location.locationId
+    );
+
+    if (!alreadyExists) {
+      const updatedLocations = [...(formik.values.locations || []), location];
+      formik.setFieldValue("locations", updatedLocations);
     }
+
     setInputValue("");
-    setSuggestions([]);
     setShowSuggestions(false);
   };
 
@@ -252,18 +261,18 @@ export default function JobInfoUpdateForm({
                   htmlFor="experience"
                   className="block font-semibold mb-2"
                 >
-                  Experience (Years)
+                 Min Experience (Years)
                 </label>
                 <input
                   type="number"
-                  name="experience"
-                  id="experience"
+                  name="minimumExperience"
+                  id="minimumExperience"
                   min="0"
-                  value={formik.values.experience || 0}
+                  value={formik.values.minimumExperience || 0}
                   onChange={formik.handleChange}
                   className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors focus:outline-none"
                 />
-                {formik.errors.experience && (
+                {formik.errors.minimumExperience && (
                   <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -277,7 +286,42 @@ export default function JobInfoUpdateForm({
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span>{formik.errors.experience.toString()}</span>
+                    <span>{formik.errors.minimumExperience.toString()}</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="maximumExperience"
+                  className="block font-semibold mb-2"
+                >
+                  Max Experience (Years)
+                </label>
+                <input
+                  type="number"
+                  name="maximumExperience"
+                  id="maximumExperience"
+                  min="0"
+                  value={formik.values.maximumExperience || 0}
+                  onChange={formik.handleChange}
+                  className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors focus:outline-none"
+                />
+                {formik.errors.maximumExperience && (
+                  <div className="flex items-center mt-4 text-center gap-1 text-red-600 font-medium">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span>{formik.errors.maximumExperience.toString()}</span>
                   </div>
                 )}
               </div>
@@ -375,7 +419,7 @@ export default function JobInfoUpdateForm({
                     onChange={handleLocationInputChange}
                     onFocus={() => {
                       setShowSuggestions(true);
-                      setSuggestions(currentJob.jobLocations);
+                      setSuggestions(allClientLocations);
                     }}
                   />
                   {showSuggestions && suggestions.length > 0 && (
@@ -387,32 +431,49 @@ export default function JobInfoUpdateForm({
                             key={index}
                             onClick={() => handleSelectSuggestion(location)}
                           >
-                            {location.state.locationDetails}
-                            {", "}
-                            {location.country.locationDetails}
+                            {location.locationDetails}
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {currentJob.jobLocations &&
-                    currentJob.jobLocations.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-3">
-                        {currentJob.jobLocations.map(
-                          (location: any, index: number) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2 px-4 py-1 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
-                            >
-                              <span>
-                                {location.state.locationDetails},{" "}
-                                {location.country.locationDetails}
-                              </span>
-                            </div>
-                          )
+                  {currentJob.locations && currentJob.locations.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      {formik.values.locations &&
+                        formik.values.locations.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-3">
+                            {formik.values.locations.map(
+                              (location: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-2 px-4 py-1 bg-white border-2 border-cyan-400 rounded-lg relative text-gray-700 font-medium"
+                                >
+                                  <span>{location.locationDetails}</span>
+                                  <button
+                                    type="button"
+                                    className="absolute -right-2 -top-2"
+                                    onClick={() => {
+                                      const updatedLocations =
+                                        formik.values.locations.filter(
+                                          (loc: any) =>
+                                            loc.locationId !==
+                                            location.locationId
+                                        );
+                                      formik.setFieldValue(
+                                        "locations",
+                                        updatedLocations
+                                      );
+                                    }}
+                                  >
+                                    <X className="w-5 h-5 text-gray-500 bg-white rounded-full border-2 border-gray-500"></X>
+                                  </button>
+                                </div>
+                              )
+                            )}
+                          </div>
                         )}
-                      </div>
-                    )}
+                    </div>
+                  )}
                   {showSuggestions && suggestions.length === 0 && (
                     <div>
                       <span className="text-gray-500">

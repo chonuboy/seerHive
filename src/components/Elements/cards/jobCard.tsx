@@ -27,7 +27,8 @@ import { toast } from "react-toastify";
 interface Job {
   client?:any;
   createdOn: string;
-  experience: number;
+  maximumExperience: number;
+  minimumExperience: number;
   insertedBy: string;
   isJobActive: string;
   preferredJobMode: string;
@@ -39,7 +40,7 @@ interface Job {
   jobTitle: string;
   postCreatedOn: string | null;
   salaryInCtc: number;
-  jobLocations: string[];
+  locations: string[];
 }
 
 export default function JobCard({
@@ -65,8 +66,8 @@ export default function JobCard({
 
   useEffect(() => {
     try {
-      fetchAllJobs().then((data) => {
-        setAllJobs(data);
+      fetchAllJobs(0, 12).then((data) => {
+        setAllJobs(data.content);
       });
       const candidateId = localStorage.getItem("interviewCandidateId");
       setContactId(Number(candidateId));
@@ -75,7 +76,7 @@ export default function JobCard({
         position: "top-right",
       });
     }
-  });
+  },[]);
 
   const handleAssignJob = (jobId: number) => {
     try {
@@ -329,7 +330,7 @@ export default function JobCard({
           <span className="mx-2 text-gray-300">|</span>
           <div className="flex items-center">
             <Timer className="w-4 h-4 mr-1 text-gray-400"></Timer>
-            <span>{job.experience} Yrs</span>
+            <span>{job.minimumExperience} - {job.maximumExperience} Yrs</span>
           </div>
         </div>
         <div
@@ -361,9 +362,9 @@ export default function JobCard({
                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            {job.jobLocations && job.jobLocations.length > 0
-              ? job.jobLocations
-                  .map((location: any) => location.state.locationDetails)
+            {job.locations && job.locations.length > 0
+              ? job.locations
+                  .map((location: any) => location.locationDetails)
                   .join(" , ")
               : "No Data"}
           </div>
@@ -389,7 +390,7 @@ export default function JobCard({
       )}
 
       {isJobUpdated && (
-        <Popup onClose={() => setIsJobUpdated(false)}>
+        <Popup>
           <JobInfoUpdateForm
             currentJob={job}
             id={job.jobId}

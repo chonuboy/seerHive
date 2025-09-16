@@ -33,7 +33,7 @@ export default function Analytics() {
                   : "border-transparent hover:border-gray-300"
               }`}
             >
-              Finance
+              Invoice
             </button>
           </nav>
         </div>

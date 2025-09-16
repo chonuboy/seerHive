@@ -19,6 +19,7 @@ import {
 } from "@/api/candidates/hiringType";
 import SubmitButton from "@/components/Elements/utils/SubmitButton";
 import CancelButton from "@/components/Elements/utils/CancelButton";
+import { createEducation, updateEducation } from "@/api/candidates/education";
 const ProfileUpdateForm = ({
   initialValues,
   id,
@@ -429,16 +430,28 @@ const ProfileUpdateForm = ({
   const getUpdatedFields = (initialValues: any, values: any) => {
     const updatedFields = Object.keys(values).reduce(
       (acc: Record<string, any>, key) => {
+        // Skip education fields as they're handled separately
+        const educationFields = [
+          "courseName",
+          "university",
+          "specialization",
+          "courseType",
+          "startYear",
+          "endYear",
+          "gradingSystem",
+          "marks",
+        ];
+
+        if (educationFields.includes(key)) {
+          return acc;
+        }
+
         if (key === "currentLocation") {
           if (values[key].locationId !== initialValues[key].locationId) {
             acc[key] = values[key];
           }
-        }
-
-        if (values[key] !== initialValues[key]) {
-          if (key !== "currentLocation") {
-            acc[key] = values[key];
-          }
+        } else if (values[key] !== initialValues[key]) {
+          acc[key] = values[key];
         }
         return acc;
       },
@@ -461,6 +474,7 @@ const ProfileUpdateForm = ({
     linkedin: initialValues.linkedin,
   };
 
+
   const [isDifferentlyAbleEnabled, setIsDifferentlyAbleEnabled] =
     useState(false);
 
@@ -468,11 +482,9 @@ const ProfileUpdateForm = ({
     initialValues: transormedvalues, // Pass initialValues from props
     validationSchema: profileUpdateSchema,
     onSubmit: (values) => {
-      console.log(values);
       const updatedFields = getUpdatedFields(initialValues, values);
       try {
         updateCandidate(updatedFields, id).then((data) => {
-          console.log(data);
           if (data.status === 200) {
             toast.success("Profile updated successfully", {
               position: "top-right",
@@ -486,9 +498,6 @@ const ProfileUpdateForm = ({
         });
       } catch (error) {
         console.error("Error updating profile:", error);
-        toast.error("Failed to update profile. Please try again.", {
-          position: "top-right",
-        });
       }
     },
   });
@@ -1378,45 +1387,9 @@ const ProfileUpdateForm = ({
           {/* Education and Location Section */}
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-cyan-500 mb-6">
-              Education & Location
+              Location
             </h2>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Row 1 */}
-              <div className="space-y-0">
-                <label
-                  htmlFor="highestEducation"
-                  className="text-md font-semibold"
-                >
-                  Highest Qualification
-                </label>
-                <input
-                  id="highestEducation"
-                  name="highestEducation"
-                  placeholder="e.g. Bachelor's in Computer Science"
-                  className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  value={formik.values.highestEducation}
-                />
-                {formik.touched.highestEducation &&
-                formik.errors.highestEducation ? (
-                  <div className="flex items-center mt-2 gap-2 text-red-600 font-medium">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>{formik.errors.highestEducation.toString()}</span>
-                  </div>
-                ) : null}
-              </div>
               <div className="space-y-0">
                 <label
                   htmlFor="currentLocation"
@@ -1442,7 +1415,7 @@ const ProfileUpdateForm = ({
                   id="address1"
                   name="address1"
                   placeholder="e.g. 123 Main St"
-                  className="w-full flex items-center gap-2 py-3 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
+                  className="w-full flex items-center gap-2 py-2.5 bg-white border-b-2 border-gray-300 focus-within:border-cyan-500 transition-colors"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.address1}

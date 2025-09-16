@@ -221,10 +221,17 @@ export default function Recruitments() {
     try {
       uploadRecruitmentData(file).then((res) => {
         console.log(res);
-        toast.success("File uploaded successfully", { position: "top-right" });
-        setUploading(false);
-        setFile(null);
-        setIsDoc(false);
+
+        if (res.message) {
+          toast.error(res.message, { position: "top-right" });
+        } else {
+          toast.success("File uploaded successfully", {
+            position: "top-right",
+          });
+          setUploading(false);
+          setFile(null);
+          setIsDoc(false);
+        }
       });
     } catch (err: any) {
       setError(err.message || "An error occurred during upload.");
@@ -233,7 +240,9 @@ export default function Recruitments() {
     }
   };
 
-  const handleEntriesKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleEntriesKeyDown = async (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Enter") {
       if (resetEntries > totalElements) {
         toast.error("Cannot set entries more than total elements", {
@@ -241,7 +250,7 @@ export default function Recruitments() {
         });
         return;
       }
-      setIsLoading(true)
+      setIsLoading(true);
       setCurrentPage(0); // Reset to first page when changing entries per page
       const data = await fetchAllRecruitmentData(currentPage, resetEntries);
       if (data) {

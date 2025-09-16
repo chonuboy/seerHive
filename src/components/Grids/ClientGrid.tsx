@@ -76,7 +76,7 @@ const ClientGrid: React.FC<{
   return (
     <div className="min-h-screen">
       {isBranchAdded && (
-        <Popup onClose={() => setIsBranchAdded(false)}>
+        <Popup>
           <AddClientLocation
             masterLocations={locations}
             clientId={activeClientId || 1}
@@ -117,7 +117,6 @@ const ClientGrid: React.FC<{
                           onClick={() => {
                             setActiveClientId(client.clientId)
                             setIsBranchAdded(true);
-                            console.log(client.clientId)
                             setOpenDropdown(null)
                           }}
                           className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -133,36 +132,6 @@ const ClientGrid: React.FC<{
                           </div>
                           <span>Add New Branch</span>
                         </button>
-                        {/* <button
-                          onClick={() => {setIsJobAdded(true);console.log(client.clientId)}}
-                          className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <div className="w-4 h-4 text-gray-400">
-                            <svg fill="currentColor" viewBox="0 0 20 20">
-                              <path
-                                fillRule="evenodd"
-                                d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h2zm4-1a1 1 0 00-1 1v1h2V6a1 1 0 00-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                          <span>Add New Job</span>
-                        </button>
-                        {isJobAdded && (
-                          <Popup
-                            onClose={() => setIsJobAdded(false)}
-                            styleMod="z-50"
-                          >
-                            <AddNewJob
-                              client={client}
-                              autoClose={() => {
-                                setIsJobAdded(false);
-                                onUpdate();
-                                setOpenDropdown(null);
-                              }}
-                            />
-                          </Popup>
-                        )} */}
                       </div>
                     </div>
                   )}

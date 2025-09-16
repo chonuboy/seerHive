@@ -52,9 +52,9 @@ export const deleteJob = async (jobId: string) => {
 };
 
 // GET /api/jobs
-export const fetchAllJobs = async () => {
+export const fetchAllJobs = async (currentPage: number, size: number) => {
   try {
-    const response = await axios.get(`${API_URL}api/jobs`, {
+    const response = await axios.get(`${API_URL}api/jobs?page=${currentPage}&size=${size}`, {
       method: 'GET',
       headers: {
         'Authorization': 'Basic ' + btoa(`${Email}:${Password}`), // replace with your credentials

@@ -1,15 +1,15 @@
 import axios from "axios";
 import { API_URL } from "../api_URL";
-import { Email,Password } from "../creds";
+import { Email, Password } from "../creds";
 
 // GET /api/clients/{id}
 export const fetchClient = async (id: number) => {
   try {
     const response = await axios.get(`${API_URL}api/clients/${id}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': 'Basic ' + btoa(`${Email}:${Password}`),
-        'Content-Type': 'application/json',
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
       },
     });
     return response.data;
@@ -17,7 +17,6 @@ export const fetchClient = async (id: number) => {
     return err.response ? err.response.data : err.message;
   }
 };
-
 
 export const searchCandidates = async (query: any) => {
   try {
@@ -39,7 +38,7 @@ export const searchCandidates = async (query: any) => {
   }
 };
 
-export const searchClient = async (query: any, page: number,size:number) => {
+export const searchClient = async (query: any, page: number, size: number) => {
   try {
     const response = await axios.get(
       `${API_URL}api/clients/search?keyword=${query}&page=${page}&size=${size}`,
@@ -56,21 +55,20 @@ export const searchClient = async (query: any, page: number,size:number) => {
   } catch (err: any) {
     return err.response ? err.response.data : err.message;
   }
-}
-
+};
 
 // PUT /api/clients/{id}
 export const updateClient = async (id: number, reqData: any) => {
   try {
     const response = await axios.put(`${API_URL}api/clients/${id}`, reqData, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Authorization': 'Basic ' + btoa(`${Email}:${Password}`),
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
     });
-    return response
+    return response;
   } catch (err: any) {
     return err.response ? err.response.data : err.message;
   }
@@ -80,10 +78,10 @@ export const updateClient = async (id: number, reqData: any) => {
 export const deleteClient = async (id: number) => {
   try {
     const response = await axios.delete(`${API_URL}api/clients/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Authorization': 'Basic ' + btoa(`${Email}:${Password}`),
-        'Content-Type': 'application/json',
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
       },
     });
     return response.data;
@@ -101,8 +99,8 @@ export const fetchAllClients = async (page: number = 0, size: number = 10) => {
         size,
       },
       headers: {
-        'Authorization': 'Basic ' + btoa(`${Email}:${Password}`),
-        'Content-Type': 'application/json',
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
       },
     });
     const data = response.data;
@@ -122,14 +120,59 @@ export const fetchAllClients = async (page: number = 0, size: number = 10) => {
 export const createClient = async (reqData: any) => {
   try {
     const response = await axios.post(`${API_URL}api/clients`, reqData, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        Authorization: 'Basic ' + btoa(`${Email}:${Password}`),
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
     });
     return response;
+  } catch (err: any) {
+    return err.response ? err.response.data : err.message;
+  }
+};
+
+export const getClientsCount = async () => {
+  try {
+    const response = await axios.get(`${API_URL}api/clients?page=0&size=100`, {
+      method: "GET",
+      headers: {
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data.totalElements;
+  } catch (err: any) {
+    return err.response ? err.response.data : err.message;
+  }
+};
+
+export const getAllClients = async () => {
+  try {
+    const response = await axios.get(`${API_URL}api/clients?page=0&size=100`, {
+      method: "GET",
+      headers: {
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data.content;
+  } catch (err: any) {
+    return err.response ? err.response.data : err.message;
+  }
+};
+
+export const getOverAllClients = async () => {
+  try {
+    const response = await axios.get(`${API_URL}api/clients?page=0&size=100`, {
+      method: "GET",
+      headers: {
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
   } catch (err: any) {
     return err.response ? err.response.data : err.message;
   }

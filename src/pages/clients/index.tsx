@@ -57,19 +57,14 @@ export default function Clients() {
     };
 
     fetchData();
-  }, [
-    currentPage,
-    locationAdded,
-    isSearchMode,
-    changeInClients,
-  ]);
+  }, [currentPage, locationAdded, isSearchMode, changeInClients]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
 
     if (isSearchMode && searchKeyword.trim()) {
       setIsLoading(true);
-      searchClient(searchKeyword, newPage -1 , resetEntries).then((data) => {
+      searchClient(searchKeyword, newPage - 1, resetEntries).then((data) => {
         setIsLoading(false);
         if (data.status === "NOT_FOUND") {
           toast.error("No more clients found", {
@@ -108,7 +103,7 @@ export default function Clients() {
     setIsSearchMode(true);
     setCurrentPage(0);
 
-    searchClient(searchKeyword, currentPage, resetEntries).then((data) => {
+    searchClient(searchKeyword, currentPage, 12).then((data) => {
       setIsLoading(false);
       if (data.status === "NOT_FOUND") {
         toast.error(data.message, {
@@ -116,6 +111,13 @@ export default function Clients() {
         });
         setIsSearchMode(false);
         setClients([]);
+        fetchAllClients(0, 12).then((data: any) => {
+          setClients(data.content);
+          setTotalPages(data.totalPages);
+          setTotalElements(data.totalElements);
+          setResetEntries(12);
+          setIsLoading(false);
+        });
       } else {
         setClients(data.content);
       }
@@ -151,7 +153,7 @@ export default function Clients() {
         });
       } else {
         setIsLoading(true);
-        searchClient(searchKeyword, currentPage , resetEntries).then((data) => {
+        searchClient(searchKeyword, currentPage, resetEntries).then((data) => {
           setIsLoading(false);
           if (data.status === "NOT_FOUND") {
             toast.error(data.message, {
@@ -167,7 +169,6 @@ export default function Clients() {
     }
   };
 
-
   const formik = useFormik({
     initialValues: {
       clientName: null,
@@ -179,27 +180,27 @@ export default function Clients() {
     validateOnBlur: false,
     onSubmit: (values) => {
       console.log(values);
-      try {
-        createClient(values).then((data) => {
-          if (data.status === 200) {
-            toast.success("Client added successfully", {
-              position: "top-center",
-            });
-            setIsClientAdded(false);
-            fetchAllClients(currentPage, 12).then((data: any) => {
-              setClients(data.content);
-            });
-            formik.resetForm();
-          }
-          if (data.message) {
-            toast.error(data.message, {
-              position: "top-center",
-            });
-          }
-        });
-      } catch (err) {
-        console.log(err);
-      }
+      // try {
+      //   createClient(values).then((data) => {
+      //     if (data.status === 200) {
+      //       toast.success("Client added successfully", {
+      //         position: "top-center",
+      //       });
+      //       setIsClientAdded(false);
+      //       fetchAllClients(currentPage, 12).then((data: any) => {
+      //         setClients(data.content);
+      //       });
+      //       formik.resetForm();
+      //     }
+      //     if (data.message) {
+      //       toast.error(data.message, {
+      //         position: "top-center",
+      //       });
+      //     }
+      //   });
+      // } catch (err) {
+      //   console.log(err);
+      // }
     },
   });
 
@@ -247,8 +248,9 @@ export default function Clients() {
           </button>
         </div>
         {isClientAdded && (
-          <Popup onClose={() => setIsClientAdded(false)}>
+          <Popup>
             <AddClient
+              masterLocations={locations}
               autoClose={() => setIsClientAdded(false)}
               formik={formik}
             ></AddClient>
@@ -308,8 +310,9 @@ export default function Clients() {
         )}
 
         {isClientAdded && (
-          <Popup onClose={() => setIsClientAdded(false)}>
+          <Popup>
             <AddClient
+              masterLocations={locations}
               autoClose={() => setIsClientAdded(false)}
               formik={formik}
             ></AddClient>

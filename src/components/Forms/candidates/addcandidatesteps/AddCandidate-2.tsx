@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { updateCandidateFormData } from "@/Features/candidateSlice";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { uploadImage, uploadResume } from "@/api/candidates/candidates";
 import { toast } from "react-toastify";
 import { useField } from "formik";
@@ -8,42 +8,45 @@ import { useField } from "formik";
 export default function Step2Uploads() {
   const dispatch = useDispatch();
   const formData = useSelector((state: any) => state.candidate.formData);
-  const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const [profilePreview, setProfilePreview] = useState<string | null>(
+    formData.image || null
+  );
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resumeField, resumeMeta] = useField("resume");
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // 2. Update your component code
+  // Initialize from Redux store when component mounts
+  useEffect(() => {
+    if (formData.image) {
+      setProfilePreview(formData.image);
+    }
+    if (formData.resume) {
+      setSuccessMsg("Resume already uploaded");
+    }
+  }, [formData]);
+
   const handleImageChange = async (field: string, file: File | null) => {
     if (!file) return;
 
     try {
-      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (e) => {
-        setProfilePreview(e.target?.result as string);
+        const preview = e.target?.result as string;
+        setProfilePreview(preview);
       };
       reader.readAsDataURL(file);
 
-      // Upload to server
       const response = await uploadImage(file);
       if (response) {
-        dispatch(updateCandidateFormData({ image: response }));
+        dispatch(updateCandidateFormData({
+          image: response,
+        }));
       }
-
-      // If you need to store the server response (like image URL)
-      // dispatch(updateCandidateFormData({
-      //   profilePhoto: response.imageUrl, // Adjust according to your API response
-      //   profilePhotoFile: file // If you need the file object too
-      // }));
     } catch (error) {
-      console.error("Upload failed:", error);
-      // Reset preview if upload fails
       setProfilePreview(null);
-      // Show error to user
-      alert("Image upload failed. Please try again.");
+      toast.error("Image upload failed. Please try again.", { position: "top-center" });
     }
   };
 
@@ -54,31 +57,26 @@ export default function Step2Uploads() {
 
   const handleUpload = async (event: any) => {
     event.stopPropagation();
-    const fileName = file?.name;
     if (!file) return;
 
-    if (file.size > 500000) {
+    if (file.size > 5000000) { // 5MB in bytes
       setError("File size should be less than 5MB");
       return;
     } else {
+      setUploading(true);
       const formData = new FormData();
       formData.append("file", file);
       try {
-        uploadResume(formData)
-          .then((data) => {
-            console.log(data);
-            setSuccessMsg("File Uploaded Successfully");
-            setError(null);
-            dispatch(updateCandidateFormData({ resume: data }));
-          })
-          .catch((err) => {
-            toast.error(err.message, {
-              position: "top-center",
-            });
-          });
-        toast.dismiss();
-      } catch (err) {
-        toast.dismiss();
+        const data = await uploadResume(formData);
+        setSuccessMsg("File Uploaded Successfully");
+        setError(null);
+        dispatch(updateCandidateFormData({ resume: data }));
+      } catch (err: any) {
+        toast.error(err.message, {
+          position: "top-center",
+        });
+      } finally {
+        setUploading(false);
       }
     }
   };
@@ -86,6 +84,7 @@ export default function Step2Uploads() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setSuccessMsg(null); // Reset success message when new file is selected
     }
   };
 
@@ -100,7 +99,7 @@ export default function Step2Uploads() {
             <div className="w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
               {profilePreview ? (
                 <img
-                  src={profilePreview || "/placeholder.svg"}
+                  src={profilePreview}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -133,7 +132,7 @@ export default function Step2Uploads() {
                   className="hidden"
                 />
               </label>
-              {(profilePreview || formData.profilePhoto) && (
+              {(profilePreview || formData.image) && (
                 <button
                   type="button"
                   onClick={removeProfilePhoto}
@@ -150,56 +149,12 @@ export default function Step2Uploads() {
           </div>
         </div>
 
-        {/* <div className="border-t pt-8">
-          <label className="block font-semibold mb-6">Resume</label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
-            <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                <path
-                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div className="mt-4">
-                <label className="cursor-pointer">
-                  <span className="mt-2 block text-sm font-medium text-gray-900">Choose a File</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                </label>
-                <p className="mt-2 text-sm text-gray-500">or drag and drop</p>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">PDF, DOC, DOCX up to 5MB</p>
-              {formData.resume && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">Selected: {formData.resume.name}</p>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              className="px-8 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-            >
-              Upload
-            </button>
-          </div>
-        </div> */}
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-1">
             Upload Document
           </h3>
         </div>
         <div className="mx-auto p-6 bg-white mt-16 border-gray-200 transition-all duration-300 text-center">
-          {/* Header */}
-
-          {/* File Upload Section */}
           <div className="mb-6 text-center">
             <div className="flex flex-col items-center gap-4">
               <label className="max-w-full flex flex-col items-center px-4 py-6 text-gray-700  cursor-pointer transition-colors duration-200">
@@ -267,7 +222,6 @@ export default function Step2Uploads() {
             </div>
           </div>
 
-          {/* Upload Button */}
           <button
             onClick={handleUpload}
             disabled={uploading || !file}

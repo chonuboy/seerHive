@@ -34,7 +34,14 @@ export const updateJobTech = async (jobTechId: string, reqData: any) => {
 // DELETE /api/job-tech/{jobTechId}
 export const deleteJobTech = async (jobTechId: string) => {
   try {
-    const response = await axios.delete(`${API_URL}api/job-tech/${jobTechId}`);
+    const response = await axios.delete(`${API_URL}api/job-tech/${jobTechId}`,{
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        Authorization: "Basic " + btoa(`${Email}:${Password}`),
+      }
+    });
     return response.data;
   } catch (err: any) {
     return err.response ? err.response.data : err.message;
