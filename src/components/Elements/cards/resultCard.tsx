@@ -307,7 +307,7 @@ export const ResultCard = ({
                         </svg>
                       </div>
                       <span className="text-sm text-gray-700">
-                        {candidate.currentLocation}
+                        {candidate.currentLocation.locationDetails ?? candidate.currentLocation}
                       </span>
                     </div>
                   )}
