@@ -1,5 +1,4 @@
 import { Candidate } from "@/lib/definitions";
-
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -67,6 +66,13 @@ const CandidateGrid: React.FC<{
 
   const toggleDropdown = (index: number) => {
     setOpenDropdown(openDropdown === index ? null : index);
+  };
+
+  const handleUpdateProfile = (candidate: Candidate) => {
+    setSelectedCandidate(candidate);
+    setSelectedContactId(candidate.contactId ?? 0);
+    setIsProfileUpdated(true);
+    setOpenDropdown(null); // Close the dropdown
   };
 
   const loadPdf = async (resume: any, candidateId: any) => {
@@ -140,6 +146,46 @@ const CandidateGrid: React.FC<{
 
   return (
     <div className="min-h-screen">
+      {/* Update Profile Popup - Rendered outside the dropdown */}
+      {isProfileUpdated && selectedContactId > 0 && (
+        <Popup>
+          <div className="mb-10">
+            <CandidateGridUpdate
+              initialValues={selectedCandidate}
+              id={selectedContactId}
+              autoClose={() => {
+                setIsProfileUpdated(false);
+                onUpdate();
+              }}
+              masterLocations={locations}
+              onClose={() => {
+                setIsProfileUpdated(false);
+                onUpdate();
+              }}
+            />
+          </div>
+        </Popup>
+      )}
+
+      {/* Resume Popup */}
+      {isResumeOpen && pdfUrl !== "" && (
+        <Popup onClose={() => setIsResumeOpen(false)}>
+          <iframe
+            src={pdfUrl}
+            width="100%"
+            height="100%"
+            style={{
+              border: "none",
+              backgroundColor: "white",
+              overflow: "auto",
+              padding: "20px",
+              marginTop: "20px",
+            }}
+            title="Candidate Resume"
+          />
+        </Popup>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {candidates.map((candidate, index) => {
           return (
@@ -194,12 +240,7 @@ const CandidateGrid: React.FC<{
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => {
-                          setSelectedCandidate(candidate);
-                          setIsProfileUpdated(true);
-                          setSelectedContactId(candidate.contactId ?? 0);
-                          onUpdate();
-                        }}
+                        onClick={() => handleUpdateProfile(candidate)}
                         className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <div className="w-4 h-4 text-gray-400">
@@ -209,23 +250,6 @@ const CandidateGrid: React.FC<{
                         </div>
                         <span>Update Profile</span>
                       </button>
-
-                      {isProfileUpdated && selectedContactId > 0 && (
-                        <Popup>
-                          <div className="mb-10">
-                            <CandidateGridUpdate
-                              initialValues={selectedCandidate}
-                              id={selectedContactId}
-                              autoClose={() => {
-                                setIsProfileUpdated(false);
-                                toggleDropdown(selectedContactId - 1);
-                              }}
-                              masterLocations={locations}
-                              onClose={onUpdate}
-                            ></CandidateGridUpdate>
-                          </div>
-                        </Popup>
-                      )}
 
                       {candidate.resume && (
                         <button
@@ -239,23 +263,6 @@ const CandidateGrid: React.FC<{
                           </div>
                           <span>View Resume</span>
                         </button>
-                      )}
-                      {isResumeOpen && pdfUrl !== "" && (
-                        <Popup onClose={() => setIsResumeOpen(false)}>
-                          <iframe
-                            src={pdfUrl}
-                            width="100%"
-                            height="100%"
-                            style={{
-                              border: "none",
-                              backgroundColor: "white",
-                              overflow: "auto",
-                              padding: "20px",
-                              marginTop: "20px",
-                            }}
-                            title="Candidate Resume"
-                          />
-                        </Popup>
                       )}
                     </div>
                   )}
